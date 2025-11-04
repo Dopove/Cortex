@@ -1,6 +1,6 @@
 # Cortex v0.4.0 🚀
 
-**Production-grade AI agent packaging with blazing-fast (Beta Release).**
+**Production-grade AI agent packaging with blazing-fast(Beta Release).**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Mojo](https://img.shields.io/badge/Mojo-24.5-orange.svg)](https://www.modular.com/mojo)
@@ -131,17 +131,95 @@ my-agent/
 └── requirements.txt # Python dependencies
 ```
 
-### `cortex.toml` Example
+### Creating the `cortex.toml` Manifest
+
+To bundle your project, you must create a `cortex.toml` file in the root directory of your project. This file serves as a manifest, providing Cortex with all the necessary information to package your application correctly.
+
+Below is a comprehensive example of a `cortex.toml` file. You can use this as a template and customize it to fit your project's needs.
+
+### `cortex.toml` Template
 
 ```toml
+# ============================================
+# CORTEX PROJECT MANIFEST
+# ============================================
 [package]
-name = "my-agent"
-version = "1.0.0"
-description = "My AI agent system"
+name = "cortex-project-name"
+version = "0.1.0"
+description = "A brief description of your project."
+authors = ["Your Name <you@example.com>"]
 
+# ============================================
+# EXECUTION CONFIGURATION
+# ============================================
+[execution]
+# The command to run your application.
+# For Python, it's often a module path.
+command = "python -m src.main"
+
+# Add directories to the PYTHONPATH for imports to work correctly.
+python_path = "src"
+
+# ============================================
+# MODEL CONFIGURATION
+# ============================================
+[models]
+# Strategy can be 'api' (models are fetched at runtime) or 'embed' (models are bundled).
+strategy = "api"
+
+[[models.api]]
+provider = "ollama"
+name = "llama3.1:8b"
+env_key = "OLLAMA_BASE_URL" # Environment variable for the model's base URL.
+
+# ============================================
+# RUNTIME CONFIGURATION
+# ============================================
 [runtime]
-entry_point = "src/main.py"
-working_dir = "src"
+backend = "auto" # Automatically detect the appropriate backend.
+
+[runtime.hardware]
+gpu = true           # Set to true if your project uses a GPU.
+gpu_layers = -1      # Number of GPU layers to offload (-1 for all).
+cpu_threads = 0      # Number of CPU threads (0 for auto).
+memory_limit = "4GB" # Set a memory limit for your application.
+
+[runtime.cache]
+enabled = true
+path = "~/.cortex/cache" # Path to the cache directory.
+persist = true           # Persist the cache between runs.
+
+# ============================================
+# BUILD OPTIONS
+# ============================================
+[build]
+optimization = "basic"        # Build optimization level.
+include_python_venv = false   # Whether to include the Python virtual environment.
+include_tests = false         # Whether to include tests in the bundle.
+include_docs = false          # Whether to include documentation.
+
+# A list of files and directories to exclude from the bundle.
+exclude = [
+    "**/__pycache__/**",
+    "**/.git/**",
+    "**/.venv/**",
+    "**/node_modules/**",
+    "**/*.pyc",
+    "**/.DS_Store"
+]
+
+# ============================================
+# AGENTS CONFIGURATION
+# ============================================
+[agents]
+# Define your agents here.
+[[agents.crew]]
+name = "MyAgent"
+role = "An agent that does amazing things."
+goal = "To be the best agent ever."
+backstory = "This agent has a rich and storied history."
+verbose = true
+allow_delegation = false
 ```
 
 ---
