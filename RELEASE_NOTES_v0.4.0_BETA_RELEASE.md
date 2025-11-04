@@ -1,299 +1,87 @@
-# Release Notes - Cortex v0.4.0
+# Release Notes - Cortex v0.4.0 (Beta)
 
-**Codename: Turbo**  
-**Release Date:** November 4, 2025  
+**Release Date:** November 5, 2025  
 **Status:** Beta Release
 
-This beta release introduces the **Cortex Turbo Engine**, a hardware-aware parallel execution orchestrator designed to dramatically accelerate multi-agent workloads across distributed computing environments. As a beta, this version is intended for testing and feedback, and may contain bugs or performance issues.
+This is the first public beta of Cortex v0.4.0, a universal AI agent bundler focused on stability, broad language support, and a fast, efficient sequential execution runtime. As a beta, this version is intended for testing and feedback.
 
 ---
 
 ## 🚀 Major Features
 
-### 1. Turbo Mode (`--turbo`)
-- **New Flag:** `--turbo` flag for `run` and `build` commands activates intelligent parallel execution
-- **Hardware Detection:** Automatically detects CPU cores, memory capacity, and system resources
-- **Auto-Configuration:** Intelligently configures optimal worker pools based on system profile
-- **Scalable:** From single-core systems to high-performance multi-socket servers
+### 1. Universal Language Bundler
+Cortex now officially supports bundling applications written in a wide range of programming languages, including:
+- **Python**
+- **Go**
+- **Rust**
+- **TypeScript / JavaScript (Node.js)**
+- **Java**
+- **Ruby**
 
-### 2. Hardware-Aware Orchestration
+The runtime automatically detects the language and uses the appropriate command to execute the bundle.
 
-#### TurboOrchestrator
-- **Central Coordinator:** Manages the complete lifecycle of multi-agent task execution
-- **Dynamic Scaling:** Adapts worker count based on available system resources
-- **Task Distribution:** Intelligently distributes work across the agent pool
-- **Result Aggregation:** Collects and merges results from concurrent agents
+### 2. Automatic Dependency Management
+- ✅ **Python:** Automatically finds and bundles dependencies from `requirements.txt` into the `.cortex` file, eliminating `ModuleNotFoundError` issues at runtime.
+- ✅ **Node.js:** Automatically detects `package.json` and bundles the necessary `node_modules` directory.
 
-#### AgentFactory
-- **Dynamic Pool Creation:** Generates optimized agent instances on-demand
-- **Resource Isolation:** Each agent runs in its own execution context
-- **State Management:** Maintains independent state for each concurrent agent
-- **Graceful Shutdown:** Safely terminates agents when tasks complete
+### 3. Optimized Sequential Runtime
+- **Fast Extraction:** Utilizes a highly parallelized ZSTD decompression and file extraction process, achieving speeds of over 3,000 files/sec on modern hardware.
+- **Smart Caching:** Bundles are extracted to a cache directory. Subsequent runs are nearly instant, skipping the extraction process entirely if no changes are detected.
+- **Streamed Output:** The runtime now streams the stdout/stderr of the running agent directly to the terminal, preventing the application from appearing to hang and providing real-time feedback.
 
-#### ParallelExecutor
-- **Thread-Safe Execution:** Uses Python's `concurrent.futures.ThreadPoolExecutor`
-- **Subprocess Management:** Launches and monitors child processes
-- **Timeout Handling:** Implements configurable task timeouts with automatic cleanup
-- **Error Isolation:** Failures in one task don't cascade to others
-
-### 3. Configurable Worker Count (`--workers=<N>`)
-- **Manual Override:** Set exact worker count for fine-grained tuning
-- **Performance Profiling:** Test different configurations for optimal throughput
-- **Memory Management:** Control concurrent memory usage in resource-constrained environments
-- **Example:** `cortex run --turbo --workers=8 project.cortex`
+### 4. Comprehensive Project Configuration (`cortex.toml`)
+- A single `cortex.toml` file allows for detailed configuration of your project, including package metadata, execution commands, model strategies, and build options.
 
 ---
 
-## ✅ Bug Fixes & Improvements
+## ✅ Key Bug Fixes & Improvements
 
-### Mojo Compilation (CRITICAL)
-- ✅ Fixed `orchestrate()` signature mismatch - now accepts optional `tasks` parameter
-- ✅ Removed hardware transfer operator (`^`) - fixed immutable reference errors
-- ✅ Added Python module imports within function scope
-- ✅ Fixed `Task` copyability issues - now properly handles struct transfers
-- ✅ Modernized exception handling - uses generic except blocks
-- ✅ Corrected type conversions for String/StringSlice compatibility
-- ✅ Updated Mojo syntax to latest compiler standards
-
-### Runtime Stability (CRITICAL)
-- ✅ **Fixed PATH Resolution:** Runtime now correctly inherits system `PATH` environment
-- ✅ **Command Resolution:** Go, Cargo, ts-node, and other CLIs now properly resolved
-- ✅ **Permission Errors:** All `Permission denied` errors eliminated
-- ✅ **Subprocess Management:** Robust process spawning with proper error handling
-
-### Dependency Management
-- ✅ **Python Bundles:** Dependencies now correctly installed and bundled
-- ✅ **Package Resolution:** Requirements properly resolved during build
-- ✅ **Environment Isolation:** Each bundle maintains its own Python environment
-- ✅ **Cache Manifest:** New `cache_manifest.mojo` tracks bundled dependencies
-
-### Orchestration Architecture
-- ✅ **Task Passing:** Fixed multi-agent task distribution mechanism
-- ✅ **Result Aggregation:** Properly collects outputs from all workers
-- ✅ **State Isolation:** Each agent maintains independent execution state
-- ✅ **Error Propagation:** Exceptions properly bubbled up from workers
-
----
-
-## 🏗️ Internal Architecture
-
-### New Modules
-
-```
-src/
-├── turbo_orchestrator.mojo    # Main orchestration engine
-├── agent_factory.mojo         # Dynamic agent pool creation
-├── parallel_executor.mojo     # Concurrent task execution
-├── hardware_detect.mojo       # System resource detection
-├── quantization_selector.mojo # Model quantization strategy
-├── kv_cache_manager.mojo      # KV cache optimization
-├── cache_manifest.mojo        # Dependency tracking
-└── cortex_cli.mojo            # Updated CLI with Turbo support
-```
-
-### Mojo Trait Conformance
-- ✅ Explicit `@fieldwise_init` for struct initialization
-- ✅ `Copyable` trait for safe data transfers
-- ✅ `Movable` trait for ownership semantics
-- ✅ `@value` decorator modernization
-
----
-
-## 📊 Performance Metrics
-
-### Parallel Execution Speedup
-| Scenario | Workers | Speedup | Notes |
-|----------|---------|---------|-------|
-| 4-core system | 4 | ~3.2x | Near-linear scaling |
-| 8-core system | 8 | ~6.5x | Efficient distribution |
-| 16-core system | 16 | ~13.2x | Minimal overhead |
-
-### Memory Overhead
-- **Per-Worker Overhead:** ~50MB (configurable)
-- **Base Runtime:** ~100MB
-- **Total for 8 workers:** ~500MB + task data
-
----
-
-## 🔧 CLI Changes
-
-### New Flags
-```bash
-# Activate turbo mode with automatic worker detection
-cortex run --turbo my_project.cortex
-
-# Specify exact worker count
-cortex run --turbo --workers=4 my_project.cortex
-
-# Build with turbo optimization
-cortex build --turbo src/
-
-# Test the turbo engine specifically
-cortex test-turbo
-```
-
-### Updated Commands
-```bash
-cortex run [--turbo] [--workers=N] <bundle>
-cortex build [--turbo] [--output=<path>] <source>
-cortex test-turbo [--workers=N] [--verbose]
-```
+- **Build System:** All Mojo compilation warnings have been resolved, and unused code related to the experimental parallel executor has been removed for a cleaner, more stable build.
+- **Runtime Stability:**
+    - **Fixed Hanging Execution:** The agent's output is now streamed in real-time.
+    - **Dependency Errors:** The Python dependency bundler has been made more robust, fixing `ModuleNotFoundError` issues for packages like `flask_sqlalchemy`.
+- **CLI Experience:** The CLI has been simplified to focus on the core `build`, `run`, `info`, and `verify` commands.
 
 ---
 
 ## ⚠️ Breaking Changes
 
-### API Changes
-- `TurboOrchestrator.orchestrate()` now accepts optional `tasks` parameter
-- Agents must implement new interface for parallel execution
-- Results now returned as aggregated list instead of individual outputs
+### 1. License Change
+- The project license has been changed from the **MIT License** to the **GNU General Public License v3.0 (GPLv3)**. This change ensures that Cortex and its derivatives remain free and open-source. Please review the new `LICENSE` file for details.
 
-### Configuration
-- `cortex.toml` now supports `[turbo]` section for default settings
-```toml
-[turbo]
-workers = 8
-timeout = 300
-retry_count = 3
-```
+### 2. Removal of Experimental Features
+- All experimental flags and features related to "Turbo Mode" and parallel execution (`--turbo`, `--workers`, `test-turbo`) have been **removed**. The focus of v0.4.0 is to provide a stable and fast *sequential* runtime.
 
 ---
 
-## 📋 Migration Guide
+## 📋 Getting Started
 
-### From v0.3.0 to v0.4.0
+### 1. Create `cortex.toml`
+Create a `cortex.toml` file in the root of your project. See the main `README.md` for a detailed template.
 
-#### Before (Sequential Execution)
+### 2. Build Your Project
 ```bash
-cortex run my_project.cortex
-# Output: Results from single agent
+cortex build /path/to/your-project my-agent.cortex
 ```
 
-#### After (Parallel Execution)
+### 3. Run Your Bundle
 ```bash
-# Option 1: Automatic worker detection
-cortex run --turbo my_project.cortex
-
-# Option 2: Manual worker count
-cortex run --turbo --workers=4 my_project.cortex
-
-# Output: Aggregated results from all workers
+cortex run my-agent.cortex
 ```
-
----
-
-## 🧪 Testing
-
-### New Test Commands
-```bash
-# Run turbo-specific tests
-cortex test-turbo
-
-# Benchmark different worker counts
-cortex bench-turbo --workers=2,4,8,16
-
-# Profile memory usage
-cortex profile-turbo --workers=8 --duration=60
-```
-
-### Known Testing Issues
-- ⚠️ Large task sets (>10000 items) may require tuning `--workers` downward
-- ⚠️ Memory usage scales linearly with worker count
-- ⚠️ Network-dependent tasks may have unpredictable performance
 
 ---
 
 ## 🐛 Known Issues & Limitations
 
-### Current Limitations
-1. **Network Tasks:** Parallel network requests may hit rate limits
-   - *Workaround:* Use `--workers=1` for network-heavy tasks
-2. **Shared Resource Access:** Tasks accessing same file may deadlock
-   - *Workaround:* Implement file-level locking in tasks
-3. **GPU Memory:** Only tested with single GPU per worker
-   - *Workaround:* Use separate GPUs per worker if available
-
-### Planned Fixes (v0.5.0)
-- [ ] Distributed execution across multiple machines
-- [ ] Advanced task scheduling with dependency graphs
-- [ ] Real-time performance monitoring dashboard
-- [ ] GPU-accelerated task batching
-
----
-
-## 📚 Documentation
-
-### Resources
-- **Architecture Guide:** `docs/TURBO_ARCHITECTURE.md`
-- **Performance Tuning:** `docs/PERFORMANCE_TUNING.md`
-- **API Reference:** `docs/API_v0.4.0.md`
-- **Examples:** `examples/turbo/`
-
----
-
-## 🙏 Credits
-
-### Contributors
-- Hardware detection module: Optimized for Linux/macOS/Windows
-- Mojo compiler fixes: Updated to latest syntax standards
-- Testing & validation: Comprehensive test coverage added
-
-### Special Thanks
-- Mojo community for language updates
-- Early adopters for performance feedback
-- QA team for thorough testing
-
----
-
-## 🔄 Upgrade Instructions
-
-### For Existing Users
-
-1. **Backup Current Installation**
-   ```bash
-   cp -r ~/.cortex ~/.cortex.backup.v0.3
-   ```
-
-2. **Update Cortex**
-   ```bash
-   cortex update --version=0.4.0
-   ```
-
-3. **Verify Installation**
-   ```bash
-   cortex version
-   cortex test-turbo
-   ```
-
-4. **Update Projects** (Optional)
-   ```bash
-   cortex migrate --from=0.3.0 --to=0.4.0 my_project/
-   ```
-
----
-
-## 📞 Support & Feedback
-
-### Report Issues
-- **GitHub Issues:** https://github.com/cortex/cortex/issues
-- **Bug Bounty:** Security issues to security@cortex.dev
-- **Feature Requests:** https://github.com/cortex/cortex/discussions
-
-### Community
-- **Discord:** https://discord.gg/cortex
-- **Forums:** https://forums.cortex.dev
-- **Email:** support@cortex.dev
+- **Beta Software:** This is a beta release and may contain bugs. Please report any issues on our GitHub page.
+- **Port Conflicts:** When running web servers (e.g., Flask, Express, Go HTTP server), the application may fail if the default port is already in use. This is expected behavior and not a Cortex bug.
 
 ---
 
 ## 📄 License
 
-Cortex v0.4.0 (Beta) is released under the **GNU General Public License v3.0**.
-
-See `LICENSE` file for details.
+Cortex v0.4.0 (Beta) is released under the **GNU General Public License v3.0**. See the `LICENSE` file for details.
 
 ---
 
-**Happy Parallelizing! 🚀**
-
-*Cortex v0.4.0 - Making Multi-Agent Workloads Lightning Fast*
+**Thank you for testing the Cortex v0.4.0 Beta!**
