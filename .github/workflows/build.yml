@@ -1,0 +1,47 @@
+name: Build Cortex Multi-Platform
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-linux-x64
+            artifact: cortex-linux-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: cortex-macos-x64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: cortex-macos-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: cortex-windows-x64
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Mojo
+        run: |
+          curl -s https://docs.modular.com/mojo/install | sh
+      
+      - name: Build Cortex
+        run: mojo build --target ${{ matrix.target }} cortex_cli.mojo -o ${{ matrix.artifact }}
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}*
+      
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.artifact }}*
