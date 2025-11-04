@@ -1,6 +1,6 @@
 # Cortex v0.4.0 🚀
 
-**Production-grade AI agent packaging with blazing-fast, non-parallel execution (Beta Release).**
+**Production-grade AI agent packaging with blazing-fast (Beta Release).**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Mojo](https://img.shields.io/badge/Mojo-24.5-orange.svg)](https://www.modular.com/mojo)
