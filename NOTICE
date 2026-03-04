@@ -1,12 +1,9 @@
-Cortex - Multi-Agent System Bundler
-Copyright (c) 2025 Dopove
+Cortex
+Copyright (c) 2026 Dopove Private Limited
 
-This project was created and is maintained by Dopove.
+This project was created and is maintained by Dopove Private Limited.
 https://dopove.com
 https://github.com/dopove/cortex
-
-Built with Mojo 🔥 by Modular Inc.
-https://www.modular.com/mojo
 
 ---
 
@@ -16,5 +13,3 @@ This software includes components and concepts inspired by:
 - Android APK package format
 - Ollama model serving
 - CrewAI multi-agent framework
-
-Special thanks to the open-source community for making this possible.
