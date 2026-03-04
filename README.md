@@ -1,6 +1,6 @@
-# Cortex 1.1: Hardened Hypergraph Runtime
+# Cortex 1.1.2: Hardened Multi-Agent System Bundler & Runtime
 
-Cortex 1.1 is a production-grade, Rust-powered execution engine for agentic hypergraphs. Migrated from the Mojo prototype, it delivers a high-concurrency orchestrator, zero-copy memory mapping, and industrial-grade security suitable for large-scale deployments (including CUDA-heavy projects like BLOOM).
+Cortex 1.1 is a production-grade, Rust-powered execution engine for complex Multi-Agent Systems. Migrated from the Mojo prototype, it delivers a high-concurrency orchestrator, zero-copy memory mapping, industrial-grade security, and **Universal Cross-Platform compatibility (Linux, macOS, Windows)**.
 
 ## 📚 Documentation Index
 
@@ -12,23 +12,44 @@ Cortex 1.1 is a production-grade, Rust-powered execution engine for agentic hype
 
 ### One-Command Install (Recommended)
 
-Install Cortex 1.1 globally with a single command:
+#### 🐧 Linux & 🍎 macOS
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/Dopove/Cortex/main/install.sh | bash
 ```
 
-### Manual Install
+#### 🪟 Windows (PowerShell)
 
-If you prefer to build from source:
-
-```bash
-git clone https://github.com/Dopove/Cortex.git
-cd Cortex/rust
-cargo build --release
-sudo cp target/release/cortex /usr/local/bin/
-cortex init
+```powershell
+iwr https://raw.githubusercontent.com/Dopove/Cortex/main/install.ps1 -useb | iex
 ```
+
+### Manual Install (Binary)
+
+Download the pre-compiled binary for your system from **[GitHub Releases](https://github.com/Dopove/Cortex/releases)**:
+
+#### 🐧 Linux
+
+1. Download `Cortex-v1.1.2-linux-x86_64.tar.gz`.
+2. Unpack: `tar -xzvf Cortex-v1.1.2-linux-x86_64.tar.gz`.
+3. Install: `sudo mv cortex /usr/local/bin/`.
+
+#### 🍎 macOS
+
+1. Download `Cortex-v1.1.2-macos-arm64.tar.gz` (Apple Silicon) or `x86_64` (Intel).
+2. Unpack and move the binary to `/usr/local/bin/`.
+3. Allow the binary in **System Settings > Privacy & Security** if prompted.
+
+#### 🪟 Windows
+
+1. Download `Cortex-v1.1.2-windows-x86_64.zip`.
+2. Extract the `cortex.exe` file.
+3. Move it to a folder (e.g., `C:\Program Files\Cortex\`).
+4. Add that folder to your **System PATH** environment variable.
+
+---
+
+Finally, run `cortex init` to prepare your environment.
 
 ## 🚀 Quick Start
 
@@ -41,7 +62,7 @@ cortex init
 ### 2. Build a Bundle
 
 ```bash
-./cortex build examples/python-flask-api my-agent.cortex
+./cortex build path/to/your/agent-dir my-agent.cortex
 ```
 
 ### 3. Run safely
@@ -52,7 +73,7 @@ cortex init
 
 ## 🔒 Security & Hardening
 
-Cortex 1.1 is **Antigravity Certified** with zero known vulnerabilities.
+Cortex 1.1 is **Production Certified** with zero known vulnerabilities.
 
 ### AES-256-GCM Encryption
 
@@ -76,10 +97,9 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 ## 🛠️ Folder Structure
 
 - `/`: Production CLI binary and root assets.
-- `/rust`: Source code for the 1.1 Runtime, Bundler, and Core.
-- `/examples`: Multi-language agent templates.
+- `/rust`: Source code for the 1.1.2 Runtime, Bundler, and Core.
 
-## 📊 Antigravity Certification Metrics
+## 📊 Production Certification Metrics
 
 | Phase           | Metric                | Status      |
 | --------------- | --------------------- | ----------- |
@@ -90,4 +110,4 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 
 ---
 
-**Status**: `CORTEX 1.1 CERTIFIED PRODUCTION READY`
+**Status**: `CORTEX 1.1.2 CERTIFIED PRODUCTION READY`

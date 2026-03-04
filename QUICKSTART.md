@@ -1,6 +1,6 @@
-# Cortex 1.1: Quickstart Guide
+# Cortex 1.1.2: Quickstart Guide
 
-Get up and running with Cortex 1.1 in less than 5 minutes.
+Get up and running with Cortex 1.1.2 in less than 5 minutes.
 
 ## 1. Installation
 
@@ -22,11 +22,11 @@ Cortex needs to verify your Python environment and hardware capabilities before 
 
 ## 3. Create Your First Bundle
 
-Cortex bundles contain your agent logic, dependencies, and model manifests. Let's use an example project.
+Cortex bundles contain your agent logic, dependencies, and model manifests.
 
 ```bash
-# Build the python-flask-api example
-./cortex build examples/python-flask-api my-first-agent.cortex
+# Build your agent directory
+./cortex build path/to/your/agent-dir my-agent.cortex
 ```
 
 ## 4. Run Your Agent
@@ -58,6 +58,5 @@ export CORTEX_BUNDLE_PASSWORD="my-secure-password"
 
 ## 🚀 Next Steps
 
-- Check the [Usage Reference](./USAGE_REFERENCE.md) for all CLI subcommands.
+- Explore the [Usage Reference](./USAGE_REFERENCE.md) for all CLI subcommands.
 - Review [System Requirements](./REQUIREMENTS.md) for large-scale model deployments.
-- Explore the `examples/` directory for advanced agent patterns.
