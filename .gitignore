@@ -1,15 +1,26 @@
-# Mojo/Python
+# Rust build artifacts
+target/
+
+# Assistant Metadata (AI Configs/Logs)
+.agent/
+.agents/
+.repomixignore
+
+# Cortex Binaries/Bundles
+cortex
+*.cortex
+*.tar.gz
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-.mojo/
-*.mojopkg
+venv/
+.venv/
 
-# Build artifacts
-cortex
-*.cortex
-build/
-dist/
+# Logs & Temp
+*.log
+/tmp/
 
 # IDEs
 .vscode/
@@ -25,6 +36,3 @@ Thumbs.db
 *.gguf
 *.safetensors
 *.bin
-
-# Logs
-*.log

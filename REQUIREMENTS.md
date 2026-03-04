@@ -1,6 +1,6 @@
-# Cortex 1.1: System Requirements
+# Cortex 1.1.2: System Requirements
 
-This document outlines the hardware and software specifications required to run Cortex 1.1 reliably and efficiently.
+This document outlines the hardware and software specifications required to run Cortex 1.1.2 reliably and efficiently.
 
 ## 💻 Software Prerequisites
 

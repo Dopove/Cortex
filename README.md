@@ -1,6 +1,6 @@
-# Cortex 1.1: Hardened Hypergraph Runtime
+# Cortex 1.1.2: Hardened Hypergraph Runtime
 
-Cortex 1.1 is a production-grade, Rust-powered execution engine for agentic hypergraphs. Migrated from the Mojo prototype, it delivers a high-concurrency orchestrator, zero-copy memory mapping, and industrial-grade security suitable for large-scale deployments (including CUDA-heavy projects like BLOOM).
+Cortex 1.1 is a production-grade, Rust-powered execution engine for agentic hypergraphs. Migrated from the Mojo prototype, it delivers a high-concurrency orchestrator, zero-copy memory mapping, industrial-grade security, and **Universal Cross-Platform compatibility (Linux, macOS, Windows)**.
 
 ## 📚 Documentation Index
 
@@ -41,7 +41,7 @@ cortex init
 ### 2. Build a Bundle
 
 ```bash
-./cortex build examples/python-flask-api my-agent.cortex
+./cortex build path/to/your/agent-dir my-agent.cortex
 ```
 
 ### 3. Run safely
@@ -52,7 +52,7 @@ cortex init
 
 ## 🔒 Security & Hardening
 
-Cortex 1.1 is **Antigravity Certified** with zero known vulnerabilities.
+Cortex 1.1 is **Production Certified** with zero known vulnerabilities.
 
 ### AES-256-GCM Encryption
 
@@ -76,10 +76,9 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 ## 🛠️ Folder Structure
 
 - `/`: Production CLI binary and root assets.
-- `/rust`: Source code for the 1.1 Runtime, Bundler, and Core.
-- `/examples`: Multi-language agent templates.
+- `/rust`: Source code for the 1.1.2 Runtime, Bundler, and Core.
 
-## 📊 Antigravity Certification Metrics
+## 📊 Production Certification Metrics
 
 | Phase           | Metric                | Status      |
 | --------------- | --------------------- | ----------- |
@@ -90,4 +89,4 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 
 ---
 
-**Status**: `CORTEX 1.1 CERTIFIED PRODUCTION READY`
+**Status**: `CORTEX 1.1.2 CERTIFIED PRODUCTION READY`

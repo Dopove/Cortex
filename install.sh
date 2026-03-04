@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cortex 1.1 Global Installer
+# Cortex 1.1.2 Global Installer
 # Purpose: Auto-install Cortex to the user's PATH
 
 set -e
@@ -11,7 +11,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}Cortex 1.1 Installer Starting...${NC}"
+echo -e "${BLUE}Cortex 1.1.2 Installer Starting...${NC}"
 
 # 1. Dependency Checks
 command -v git >/dev/null 2>&1 || { echo -e >&2 "${RED}Error: git is required but not installed.${NC}"; exit 1; }
@@ -25,7 +25,7 @@ echo -e "${BLUE}Cloning Cortex repository...${NC}"
 git clone --depth 1 https://github.com/Dopove/Cortex.git .
 
 # 3. Build
-echo -e "${BLUE}Building Cortex 1.1 (Release)...${NC}"
+echo -e "${BLUE}Building Cortex 1.1.2 (Release)...${NC}"
 cd rust
 cargo build --release
 
@@ -52,7 +52,7 @@ echo -e "${BLUE}Running 'cortex init'...${NC}"
 "$INSTALL_DIR/cortex" init
 
 echo -e "\n${GREEN}========================================${NC}"
-echo -e "${GREEN}Cortex 1.1 is now available globally.${NC}"
+echo -e "${GREEN}Cortex 1.1.2 is now available globally.${NC}"
 echo -e "Try running: ${BLUE}cortex --version${NC}"
 echo -e "${GREEN}========================================${NC}"
 
