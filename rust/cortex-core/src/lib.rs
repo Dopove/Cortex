@@ -1,4 +1,5 @@
 pub mod hardware;
+pub mod memory;
 
 use serde::{Deserialize, Serialize};
 
@@ -16,12 +17,20 @@ pub struct PackageInfo {
     pub name: String,
     pub version: String,
     pub description: Option<String>,
+    #[serde(default)]
+    pub allow_network: bool,
+    #[serde(default)]
+    pub allowed_ips: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AgentInfo {
     pub name: String,
     pub entry_point: String,
+    #[serde(default)]
+    pub allow_network: bool,
+    #[serde(default)]
+    pub allowed_ips: Vec<String>,
     pub checksum: Option<String>,
 }
 

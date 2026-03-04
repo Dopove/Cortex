@@ -1,0 +1,7 @@
+agents:
+  custom_agent:
+    build:
+      context: .
+      instructions: ""
+    run:
+      command: python main.py

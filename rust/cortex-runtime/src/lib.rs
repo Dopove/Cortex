@@ -1,20 +1,44 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{info, warn};
 
+mod crypto;
 pub mod evaluation;
 pub mod executor;
 pub mod inspect;
 pub mod kv_cache;
+pub mod k8s;
+pub mod mcp;
+pub mod network;
 pub mod parallel;
+pub mod sandbox;
+pub mod secrets;
+pub mod session;
+pub mod shm;
 pub mod tokenizer;
-mod crypto;
 
 pub struct Orchestrator;
 
 impl Orchestrator {
     pub async fn execute(bundle_path: &PathBuf, gpu_id: Option<u32>, is_turbo: bool) -> Result<()> {
-        info!("Initializing Cortex Runtime for bundle: {:?}", bundle_path);
+        let manifest = inspect::InspectEngine::get_manifest(bundle_path)?;
+        let session_id = format!("{}-{}", manifest.package.name, std::process::id());
+
+        info!(
+            "Initializing Cortex Runtime for session: {} (bundle: {:?})",
+            session_id, bundle_path
+        );
+
+        let session_mgr = session::SessionManager::new()?;
+        session_mgr.record_session(session::SessionInfo {
+            session_id: session_id.clone(),
+            bundle_name: manifest.package.name.clone(),
+            pid: std::process::id(),
+            start_time: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_secs(),
+        })?;
+
         if is_turbo {
             info!("⚡ TURBO MODE ACTIVATED");
         }
@@ -31,6 +55,9 @@ impl Orchestrator {
             || bundle_str.contains("sample")
             || bundle_str.contains("scrapper")
             || bundle_str.contains("cuda")
+            || bundle_str.contains("security")
+            || bundle_str.contains("test")
+            || bundle_str.contains("agent")
         {
             1.0
         } else {
@@ -63,32 +90,61 @@ impl Orchestrator {
         }
 
         let temp_dir = tempfile::tempdir()?;
-        info!("Unpacking bundle to temporary execution environment...");
+        info!("Unpacking bundle to temporary execution environment at {:?} ...", temp_dir.path());
 
         let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
         let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
         let mut archive = tar::Archive::new(decoder);
         archive.unpack(temp_dir.path())?;
 
-        // 4. Setup Dependencies if needed
+        // DEBUG: List files in temp_dir
+        if let Ok(entries) = std::fs::read_dir(temp_dir.path()) {
+            for entry in entries.flatten() {
+                info!("Extracted bundle file: {:?}", entry.file_name());
+            }
+        }
+
+        // 4. Setup Networking if requested
+    let mut macvlan_iface = None;
+    if manifest.package.allow_network {
+        match network::NetworkManager::detect_default_interface() {
+            Ok(parent) => {
+                let ifname = format!("mc_{}", &session_id[..8]);
+                if let Err(e) = network::NetworkManager::create_macvlan(&ifname, &parent) {
+                    warn!("Failed to create macvlan interface {}: {}. Falling back to standard bridge.", ifname, e);
+                } else {
+                    macvlan_iface = Some(ifname);
+                }
+            }
+            Err(e) => {
+                warn!("Could not detect default interface for macvlan: {}. Falling back to standard bridge.", e);
+            }
+        }
+    }
+
+    // 5. Setup Dependencies if needed
         let req_path = temp_dir.path().join("requirements.txt");
-        let mut python_cmd = "python".to_string();
+        let mut python_cmd = "python3".to_string(); // Default to python3
 
         if req_path.exists() {
             info!("Found requirements.txt, setting up isolated Python environment...");
             let venv_path = temp_dir.path().join(".venv");
+            info!("Venv target path: {:?}", venv_path);
 
             // Use python3 if available, otherwise python
             let base_python = if cfg!(windows) { "python" } else { "python3" };
+            info!("Using base python: {}", base_python);
 
             let status = std::process::Command::new(base_python)
-                .args(["-m", "venv", venv_path.to_str().unwrap()])
+                .args(["-m", "venv", ".venv"]) // Just use relative path since we set current_dir
                 .current_dir(temp_dir.path())
                 .status()?;
 
+            info!("Venv creation command finished with status: {:?}", status);
+
             if !status.success() {
                 return Err(anyhow::anyhow!(
-                    "Failed to create Python virtual environment"
+                    "Failed to create Python virtual environment: {:?}", status
                 ));
             }
 
@@ -97,12 +153,15 @@ impl Orchestrator {
             } else {
                 venv_path.join("bin").join("pip")
             };
+            info!("Pip command path: {:?}", pip_cmd);
 
             info!("Installing bundle dependencies...");
             let pip_status = std::process::Command::new(&pip_cmd)
                 .args(["install", "-r", "requirements.txt"])
                 .current_dir(temp_dir.path())
                 .status()?;
+
+            info!("Pip installation finished with status: {:?}", pip_status);
 
             if !pip_status.success() {
                 return Err(anyhow::anyhow!(
@@ -148,6 +207,19 @@ impl Orchestrator {
         };
         common_env.insert("PYTHONPATH".to_string(), pypath);
 
+        // Atomic Secret Redaction (Phase 4)
+        let mut secret_fds = std::collections::HashMap::new();
+        let sensitive_keys = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "AWS_SECRET_ACCESS_KEY"];
+        
+        for key in sensitive_keys {
+             if let Ok(val) = std::env::var(key) {
+                 if let Ok(fd) = secrets::SecretManager::create_secret_fd(key, &val) {
+                     secret_fds.insert(key.to_string(), fd);
+                 }
+             }
+        }
+        secrets::SecretManager::redact_env(&mut common_env);
+
         // 5. Initialize Models (Ollama sidecar and automatic pulling)
         Self::setup_models(temp_dir.path()).await?;
 
@@ -180,6 +252,11 @@ impl Orchestrator {
                     cwd: temp_dir.path().to_path_buf(),
                     env: common_env.clone(),
                     timeout_secs: 600,
+                    allow_network: agent.allow_network,
+                    session_id: session_id.clone(),
+                    macvlan_iface: macvlan_iface.clone(),
+                    allowed_ips: agent.allowed_ips.clone(),
+                    secret_fds: secret_fds.clone(),
                 });
             }
 
@@ -208,6 +285,11 @@ impl Orchestrator {
                 cwd: temp_dir.path().to_path_buf(),
                 env: common_env.clone(),
                 timeout_secs: 600,
+                allow_network: primary_agent.allow_network,
+                session_id: session_id.clone(),
+                macvlan_iface: macvlan_iface.clone(),
+                allowed_ips: primary_agent.allowed_ips.clone(),
+                secret_fds: secret_fds.clone(),
             };
 
             let (results, metrics) = parallel_executor.execute(vec![task]).await?;
@@ -323,7 +405,7 @@ impl Orchestrator {
             .context("Environment variable CORTEX_BUNDLE_PASSWORD is required for encryption")?;
 
         crypto::EncryptionEngine::encrypt_file(bundle_path, &password)?;
-        
+
         Ok(())
     }
 

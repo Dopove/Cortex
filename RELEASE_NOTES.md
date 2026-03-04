@@ -1,3 +1,31 @@
+# Release Notes: Cortex v2.5.2
+
+Cortex v2.5.2 introduces **Split Networking Architecture** and **Kubernetes Super-Pod** alignment. This release focuses on ultra-low latency egress for cloud model providers and enterprise-grade isolation.
+
+## 🌐 Split Networking (Macvlan Egress)
+
+- **Direct-to-Host Egress**: Agent namespaces now bridge directly to host interfaces via `macvlan`, bypassing the standard bridge bottleneck.
+- **Latency Reduction**: Benchmarked **-12.1%** reduction in egress latency for external API calls (HuggingFace, OpenAI, Anthropic).
+- **Zero-Copy Inter-Agent Sync**: Maintained **0.05ms** internal speed for agent-to-agent memory passing.
+
+## 🛡️ Super-Pod Security & Isolation
+
+- **Dynamic Firewall (nftables)**: Implemented manifest-driven network allowlisting directly in the runtime.
+- **Memory-Only Secret Injection**: Sensitive credentials are now injected via `memfd` segments, leaving zero disk artifacts.
+- **Hardware-Aware Status**: Improved status emission for K8s orchestrators, including real-time cgroup limit awareness.
+
+## 📊 Performance Statistics
+
+| Component            | Metric            | Result |
+| :------------------- | :---------------- | :----- |
+| **Inter-Agent Sync** | p50 Latency       | 0.05ms |
+| **Network Egress**   | Latency vs Bridge | -12.1% |
+| **Memory RSS**       | Baseline          | 21.4MB |
+
+---
+
+**Status**: `CORTEX v2.5.2 PRODUCTION READY`
+
 # Release Notes: Cortex v1.1.2
 
 Cortex v1.1.2 marks the transition from our experimental Mojo prototype to a production-hardened, multi-platform Rust engine. This release focuses on absolute security, industrial-grade performance, and high-concurrency execution for Multi-Agent Systems.

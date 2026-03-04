@@ -1,8 +1,6 @@
 use anyhow::{Context, Result};
 use cortex_core::BundleManifest;
-use std::fs::File;
 use std::io::Read;
-use std::path::PathBuf;
 use tar::Archive;
 use tracing::info;
 use zstd::stream::read::Decoder;
@@ -12,9 +10,10 @@ pub struct InspectEngine;
 impl InspectEngine {
     /// Extracts the `bundle.json` manifest from a `.cortex` archive
     /// without inflating the entire bundle.
-    pub fn get_manifest(bundle_path: &PathBuf) -> Result<BundleManifest> {
+    pub fn get_manifest(bundle_path: &std::path::Path) -> Result<BundleManifest> {
         let bundle_data = crate::crypto::EncryptionEngine::read_bundle(bundle_path)?;
-        let decoder = Decoder::new(std::io::Cursor::new(bundle_data)).context("Failed to initialize ZSTD decoder")?;
+        let decoder = Decoder::new(std::io::Cursor::new(bundle_data))
+            .context("Failed to initialize ZSTD decoder")?;
         let mut archive = Archive::new(decoder);
 
         for entry in archive.entries()? {
@@ -33,12 +32,13 @@ impl InspectEngine {
     }
 
     /// Performs a structural and integrity check on the bundle.
-    pub fn verify(bundle_path: &PathBuf) -> Result<()> {
+    pub fn verify(bundle_path: &std::path::Path) -> Result<()> {
         info!("Verifying structural integrity for: {:?}", bundle_path);
 
         let manifest = Self::get_manifest(bundle_path)?;
         let bundle_data = crate::crypto::EncryptionEngine::read_bundle(bundle_path)?;
-        let decoder = Decoder::new(std::io::Cursor::new(bundle_data)).context("Invalid ZSTD header in bundle")?;
+        let decoder = Decoder::new(std::io::Cursor::new(bundle_data))
+            .context("Invalid ZSTD header in bundle")?;
         let mut archive = Archive::new(decoder);
 
         for entry in archive.entries()? {

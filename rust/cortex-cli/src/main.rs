@@ -85,6 +85,15 @@ enum Commands {
 
     /// Initialize the Cortex runtime (downloads common packages)
     Init,
+
+    /// List active agent sessions
+    Ps,
+
+    /// Terminate a running agent session
+    Kill {
+        /// The ID of the session to terminate
+        session_id: String,
+    },
 }
 
 #[tokio::main]
@@ -188,6 +197,33 @@ async fn main() -> Result<()> {
         Commands::Init => {
             info!("Initializing Cortex Runtime and Pre-warming common dependencies");
             cortex_runtime::Orchestrator::init_env().await?;
+        }
+        Commands::Ps => {
+            let session_mgr = cortex_runtime::session::SessionManager::new()?;
+            let sessions = session_mgr.list_sessions()?;
+            if sessions.is_empty() {
+                println!("No active Cortex sessions.");
+            } else {
+                println!(
+                    "{:<40} {:<20} {:<10} {:<20}",
+                    "SESSION ID", "BUNDLE", "PID", "START TIME"
+                );
+                println!("{:-<95}", "");
+                for s in sessions {
+                    let time = chrono::DateTime::from_timestamp(s.start_time as i32 as i64, 0)
+                        .map(|dt| dt.format("%Y-%m-%d %H:%M:%S").to_string())
+                        .unwrap_or_else(|| "Unknown".to_string());
+                    println!(
+                        "{:<40} {:<20} {:<10} {:<20}",
+                        s.session_id, s.bundle_name, s.pid, time
+                    );
+                }
+            }
+        }
+        Commands::Kill { session_id } => {
+            let session_mgr = cortex_runtime::session::SessionManager::new()?;
+            session_mgr.kill_session(&session_id)?;
+            println!("✅ Session {} evaporated.", session_id);
         }
     }
 

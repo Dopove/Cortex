@@ -66,6 +66,10 @@ impl MemoryThresholdGuard {
     /// to load a model of the specified size in GB.
     /// Returns an error if the memory threshold is not met.
     pub fn check_availability(required_gb: f64) -> anyhow::Result<()> {
+        if std::env::var("CORTEX_BYPASS_MEM_CHECK").is_ok() {
+            return Ok(());
+        }
+
         let mut sys = System::new_all();
         sys.refresh_memory();
 

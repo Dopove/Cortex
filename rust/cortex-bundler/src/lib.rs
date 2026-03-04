@@ -81,6 +81,7 @@ impl Bundler {
                 agents.push(cortex_core::AgentInfo {
                     name: format!("agent_{}", entry_name.replace(".py", "").replace("/", "_")),
                     entry_point: entry_name.to_string(),
+                    allow_network: false,
                     checksum,
                 });
                 break; // Use the first one found

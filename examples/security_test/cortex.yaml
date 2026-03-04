@@ -1,0 +1,7 @@
+name: security-tester
+agent:
+  name: isolator
+  command: bash examples/security_verify.sh
+  allow_network: false
+  cpu_limit: 50
+  memory_limit: 128
