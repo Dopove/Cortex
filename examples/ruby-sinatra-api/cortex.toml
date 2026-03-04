@@ -1,0 +1,11 @@
+[project]
+name = "ruby-sinatra-api"
+version = "1.0.0"
+language = "ruby"
+
+[execution]
+command = "ruby main.rb"
+entry = "main.rb"
+
+[dependencies]
+install_command = "bundle install"

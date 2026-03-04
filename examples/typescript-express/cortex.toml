@@ -1,0 +1,15 @@
+[project]
+name = "typescript-express"
+version = "0.1.0"
+language = "typescript"
+description = "TypeScript Express API server"
+
+[execution]
+# Using ts-node
+command = "ts-node src/index.ts"
+
+# Or if you have npm scripts
+# command = "npm start"
+
+# Or using entry
+# entry = "src/index.ts"

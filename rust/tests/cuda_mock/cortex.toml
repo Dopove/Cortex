@@ -1,0 +1,2 @@
+[agents]
+primary = { name = "cuda-simulator", entry_point = "main.py" }

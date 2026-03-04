@@ -1,0 +1,13 @@
+crew:
+  agents:
+    - discovery_specialist
+    - scraping_specialist  
+    - quality_assessor
+    - content_categorizer
+  tasks:
+    - url_discovery
+    - content_scraping
+    - quality_assessment
+    - content_categorization
+  process: sequential
+  verbose: true

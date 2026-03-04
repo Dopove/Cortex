@@ -1,0 +1,16 @@
+{
+  "language": "typescript",
+  "cortex_version": "0.3.0",
+  "command": "ts-node src/index.ts",
+  "runtime": "node",
+  "entry_point": "src/index.ts",
+  "dependencies": [
+    "package.json",
+    "tsconfig.json"
+  ],
+  "requires_compilation": true,
+  "compile_command": "npx tsc",
+  "environment": {
+    "NODE_PATH": "./node_modules"
+  }
+}

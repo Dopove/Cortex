@@ -1,0 +1,13 @@
+{
+  "language": "rust",
+  "cortex_version": "0.3.0",
+  "command": "cargo run",
+  "runtime": "cargo",
+  "entry_point": "src/main.rs",
+  "dependencies": [
+    "Cargo.toml",
+    "Cargo.lock"
+  ],
+  "requires_compilation": true,
+  "compile_command": "cargo build --release"
+}

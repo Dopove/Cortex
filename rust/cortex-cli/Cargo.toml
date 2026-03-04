@@ -1,0 +1,23 @@
+[package]
+name = "cortex-cli"
+version = "1.1.0"
+edition = "2021"
+
+[[bin]]
+name = "cortex"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["json"] }
+
+cortex-core = { path = "../cortex-core" }
+cortex-runtime = { path = "../cortex-runtime" }
+cortex-bundler = { path = "../cortex-bundler" }
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"

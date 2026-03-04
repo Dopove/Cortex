@@ -1,0 +1,30 @@
+# Mojo/Python
+__pycache__/
+*.py[cod]
+*$py.class
+.mojo/
+*.mojopkg
+
+# Build artifacts
+cortex
+*.cortex
+build/
+dist/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Models (too large)
+*.gguf
+*.safetensors
+*.bin
+
+# Logs
+*.log
