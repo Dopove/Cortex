@@ -44,7 +44,7 @@ case "$OS" in
     Linux)
         if [ "$ARCH" == "x86_64" ]; then
             # Detect distribution context for suffix alignment
-            if grep -qi "ubuntu" /etc/os-release; then
+            if grep -qi "ubuntu" /etc/os-release || grep -qi "debian" /etc/os-release; then
                 SUFFIX="x64_linux_ubuntu"
             else
                 SUFFIX="x64_linux_fedora_arch"

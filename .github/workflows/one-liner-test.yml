@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-13, macos-latest]
+        os: [ubuntu-latest, macos-13, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +32,12 @@ jobs:
       - name: Run Installer
         shell: bash
         run: |
-          # Test local file execution (simulating curl | bash)
-          bash install.sh
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            powershell -ExecutionPolicy Bypass -File install.ps1
+          else
+            # Test local file execution (simulating curl | bash)
+            bash install.sh
+          fi
 
       - name: Verify Installation
         shell: bash

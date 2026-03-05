@@ -111,10 +111,17 @@ jobs:
         run: |
           # 1. Create a "Quick Install" header with one-liners
           cat <<EOF > release_body.md
-          ## 🚀 Quick Install (Unix)
-          \`\`\`bash
+          ## 🚀 Quick Install
+
+          **Unix (Linux & macOS)**
+          ```bash
           curl -sSL https://raw.githubusercontent.com/Dopove/Cortex/main/install.sh | bash
-          \`\`\`
+          ```
+
+          **Windows (PowerShell)**
+          ```powershell
+          irm https://raw.githubusercontent.com/Dopove/Cortex/main/install.ps1 | iex
+          ```
 
           ---
           EOF
