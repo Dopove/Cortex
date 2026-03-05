@@ -57,7 +57,7 @@ jobs:
               ;;
             docker-fedora)
               echo "Testing on Fedora via Docker..."
-              docker run --rm -v $(pwd):/workspace -w /workspace fedora:latest bash -c "dnf install -y grep findutils curl python3 && bash install.sh"
+              docker run --rm -v $(pwd):/workspace -w /workspace fedora:latest bash -c "dnf install -y grep findutils curl python3.11 python3.11-libs && ln -sf /usr/bin/python3.11 /usr/bin/python3 && bash install.sh"
               ;;
             powershell-ps1)
               echo "Testing via PowerShell installer..."
