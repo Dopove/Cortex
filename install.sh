@@ -24,13 +24,18 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 # 2. Version Discovery
-echo -e "${BLUE}Detecting latest version...${NC}"
-# Use GitHub API to find latest release tag
-LATEST_TAG=$(curl -s https://api.github.com/repos/Dopove/Cortex/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+if [ -n "$CORTEX_VERSION" ]; then
+    echo -e "${BLUE}Using specified version: $CORTEX_VERSION${NC}"
+    LATEST_TAG="$CORTEX_VERSION"
+else
+    echo -e "${BLUE}Detecting latest version...${NC}"
+    # Use GitHub API to find latest release tag
+    LATEST_TAG=$(curl -s https://api.github.com/repos/Dopove/Cortex/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
-if [ -z "$LATEST_TAG" ]; then
-    echo -e "${YELLOW}Warning: Could not detect latest version via API, falling back to v2.5.9${NC}"
-    LATEST_TAG="v2.5.9"
+    if [ -z "$LATEST_TAG" ]; then
+        echo -e "${YELLOW}Warning: Could not detect latest version via API, falling back to v2.5.9${NC}"
+        LATEST_TAG="v2.5.9"
+    fi
 fi
 
 echo -e "${GREEN}Target Version: $LATEST_TAG${NC}"

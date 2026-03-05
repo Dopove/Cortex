@@ -8,13 +8,18 @@ Write-Host "Cortex Professional Installer Starting..." -ForegroundColor Blue
 # 1. Dependency Checks - None strictly required for binary download besides PowerShell 5+
 
 # 2. Version Discovery
-Write-Host "Detecting latest version..." -ForegroundColor Blue
-try {
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Dopove/Cortex/releases/latest"
-    $LATEST_TAG = $release.tag_name
-} catch {
-    Write-Host "Warning: Could not detect latest version via API, falling back to v2.5.9" -ForegroundColor Yellow
-    $LATEST_TAG = "v2.5.9"
+if ($env:CORTEX_VERSION) {
+    Write-Host "Using specified version: $env:CORTEX_VERSION" -ForegroundColor Blue
+    $LATEST_TAG = $env:CORTEX_VERSION
+} else {
+    Write-Host "Detecting latest version..." -ForegroundColor Blue
+    try {
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Dopove/Cortex/releases/latest"
+        $LATEST_TAG = $release.tag_name
+    } catch {
+        Write-Host "Warning: Could not detect latest version via API, falling back to v2.5.9" -ForegroundColor Yellow
+        $LATEST_TAG = "v2.5.9"
+    }
 }
 Write-Host "Target Version: $LATEST_TAG" -ForegroundColor Green
 

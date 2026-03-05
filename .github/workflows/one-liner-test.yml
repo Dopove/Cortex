@@ -2,6 +2,11 @@ name: One-Liner Installer Test
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to test (e.g., v2.5.9)"
+        required: false
+        default: ""
   push:
     paths:
       - "install.sh"
@@ -46,6 +51,8 @@ jobs:
 
       - name: Run Installer
         shell: bash
+        env:
+          CORTEX_VERSION: ${{ github.event.inputs.version }}
         run: |
           case "${{ matrix.method }}" in
             bash-sh)
