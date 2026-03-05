@@ -8,11 +8,6 @@ Cortex v2.5.9 introduces **Direct-to-OS Binary Distribution** and **Multi-Platfo
 - **Cross-Platform Stability**: Resolved critical test failures on Windows and macOS, ensuring 100% behavior parity across all supported systems.
 - **Modernized Installer**: Refactored `install.sh` and added `install.ps1` for high-speed, single-command global deployment.
 
-## 🛠️ Infrastructure & CI
-
-- **Automated Rollout**: Improved release pipeline reliability with standardized naming and automated notes extraction.
-- **Unified Distribution**: Standardized Linux naming conventions (Ubuntu vs. Fedora/Arch) for consistent package discovery.
-
 ---
 
 **Status**: `CORTEX v2.5.9 PRODUCTION READY`
