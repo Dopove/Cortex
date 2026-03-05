@@ -1,3 +1,4 @@
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 use raw_cpuid::CpuId;
 use serde::{Deserialize, Serialize};
 use std::env::consts::OS;
@@ -24,13 +25,13 @@ impl HardwareProfile {
         let physical_cores = sys.physical_core_count().unwrap_or(1);
         let arch = std::env::consts::ARCH.to_string();
 
-        let cpuid = CpuId::new();
         let mut has_avx2 = false;
         let mut has_avx512 = false;
         let mut has_amx = false;
 
-        // ARM architecture (like M-series Macs) does not have CPUID in the same way x86 does
-        if arch == "x86_64" {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        {
+            let cpuid = CpuId::new();
             if let Some(features) = cpuid.get_extended_feature_info() {
                 has_avx2 = features.has_avx2();
                 has_avx512 = features.has_avx512f();
