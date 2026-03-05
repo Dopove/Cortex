@@ -32,7 +32,7 @@ jobs:
             os: ubuntu-latest
             method: docker-fedora
           - name: "macOS (Intel)"
-            os: macos-11
+            os: macos-14
             method: bash-sh
           - name: "macOS (Apple Silicon)"
             os: macos-latest
