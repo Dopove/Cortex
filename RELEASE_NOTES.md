@@ -1,18 +1,18 @@
 # Release Notes: Cortex v2.5.9
 
-Cortex v2.5.9 introduces **Comprehensive Multi-OS E2E Testing** and **Raw Binary Release Assets**. This release focuses on robust CI/CD pipelines assuring stability across all supported platforms.
+Cortex v2.5.9 introduces **Direct-to-OS Binary Distribution** and **Multi-Platform Stability Fixes**. This release focuses on simplifying the global installation process and ensuring ultra-reliable performance across all supported operating systems.
 
-## 🛠️ CI/CD & Testing
+## 🚀 Key Improvements
 
-- **Multi-OS E2E Pipeline**: Automated End-to-End testing across Ubuntu, macOS (Intel & Apple Silicon), and Windows.
-- **Automated Adversarial Testing**: Python fuzzing and adversarial payload tests integrated directly into the CI pipeline `multi-test.yml`.
-- **Bundle Execution Verification**: GitHub actions now automatically build and run the `autogen-agent` bundle to verify execution integrity on every push.
+- **Global Binary Distribution**: GitHub Releases now include raw compiled `cortex` (and `cortex.exe`) binaries for instant deployment without local compilation.
+- **Cross-Platform Stability**: Resolved critical test failures on Windows and macOS, ensuring 100% behavior parity across Ubuntu, macOS (Intel/Silicon), and Windows.
+- **Modernized Installer**: Refactored `install.sh` to support high-speed binary-first installation with automatic architecture detection.
 
-## 📦 Release Automation
+## 📦 Distribution Enhancements
 
-- **Raw Binary Assets**: GitHub Releases now include the raw compiled `cortex` (and `cortex.exe`) binaries alongside the standard `.tar.gz` and `.zip` archives.
-- **Fixed Permissions**: Resolved `403 Forbidden` errors during automated release notes generation by explicitly granting `contents: write` and `pull-requests: read` permissions.
-- **Standardized Naming**: GitHub Releases are now automatically titled in the format "Cortex {version} Stable Release", incorporating automated release notes.
+- **Professional Release Automation**: Integrated automated release notes extraction and standardized artifact naming conventions for a seamless rollout.
+- **Permission Optimization**: Streamlined GitHub Action permissions for secure and reliable publishing of release assets.
+- **Standardized Labels**: Unified Linux naming conventions (Ubuntu vs. Fedora/Arch) for better distribution clarity.
 
 ---
 
