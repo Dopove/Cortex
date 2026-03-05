@@ -135,6 +135,11 @@ fi
 # 6. Initialization
 echo -e "${GREEN}Cortex installed successfully!${NC}"
 echo -e "${BLUE}Running 'cortex init'...${NC}"
+
+# Ensure standard library directory exists before initialization
+# This prevents "os error 2" in restricted Docker/CI environments
+mkdir -p "$HOME/.cortex/stdlib"
+
 "$INSTALL_DIR/cortex" init
 
 echo -e "\n${GREEN}========================================${NC}"
