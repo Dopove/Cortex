@@ -3,7 +3,13 @@ name: Global Release Automation
 on:
   push:
     tags:
-      - "v*" # Triggers on tags like v0.3.0
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. v2.5.9)"
+        required: true
+        default: "v2.5.9"
 
 jobs:
   build:
@@ -62,6 +68,7 @@ jobs:
         working-directory: rust
         run: |
           mkdir -p release_dist
+          RELEASE_VERSION="${{ github.event.inputs.version || github.ref_name }}"
           # Copy the compiled binary
           cp target/${{ matrix.target }}/release/${{ matrix.binary }} release_dist/
 
@@ -71,11 +78,11 @@ jobs:
           # Create compressed archive with custom naming: cortex_version_suffix
           if [ "${{ runner.os }}" == "Windows" ]; then
             # Windows runner has 7z in path
-            7z a ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.zip ./release_dist/*
-            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.exe
+            7z a ../cortex_${RELEASE_VERSION}_${{ matrix.suffix }}.zip ./release_dist/*
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${RELEASE_VERSION}_${{ matrix.suffix }}.exe
           else
-            tar -czf ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.tar.gz -C release_dist .
-            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}
+            tar -czf ../cortex_${RELEASE_VERSION}_${{ matrix.suffix }}.tar.gz -C release_dist .
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${RELEASE_VERSION}_${{ matrix.suffix }}
           fi
 
       - name: Upload Artifacts
@@ -99,8 +106,9 @@ jobs:
         id: extract_notes
         shell: bash
         run: |
+          RELEASE_VERSION="${{ github.event.inputs.version || github.ref_name }}"
           # Extract section between the first and second H1 headers
-          sed -n '/^# Release Notes: Cortex ${{ github.ref_name }}/,/^# Release Notes:/p' RELEASE_NOTES.md | sed '$d' > release_body.md
+          sed -n "/^# Release Notes: Cortex ${RELEASE_VERSION}/,/^# Release Notes:/p" RELEASE_NOTES.md | sed '$d' > release_body.md
           echo "notes_path=release_body.md" >> $GITHUB_OUTPUT
 
       - name: Download All Binaries
@@ -112,7 +120,8 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Cortex ${{ github.ref_name }} Stable Release
+          name: Cortex ${{ github.event.inputs.version || github.ref_name }} Stable Release
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
           body_path: release_body.md
           files: release_artifacts/*
         env:
