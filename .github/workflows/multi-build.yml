@@ -72,15 +72,17 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             # Windows runner has 7z in path
             7z a ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.zip ./release_dist/*
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.exe
           else
             tar -czf ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.tar.gz -C release_dist .
+            cp target/${{ matrix.target }}/release/${{ matrix.binary }} ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}
           fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: cortex_${{ github.ref_name }}_${{ matrix.suffix }}
-          path: cortex_${{ github.ref_name }}_${{ matrix.suffix }}.*
+          path: cortex_${{ github.ref_name }}_${{ matrix.suffix }}*
 
   publish:
     name: Publish GitHub Release
@@ -99,6 +101,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          name: Cortex ${{ github.ref_name }} Stable Release
           files: release_artifacts/*
           generate_release_notes: true
         env:
