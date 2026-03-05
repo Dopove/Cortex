@@ -1,6 +1,6 @@
-# Cortex 1.1.2: Quickstart Guide
+# Cortex 2.5.9: Quickstart Guide
 
-Get up and running with Cortex 1.1.2 in less than 5 minutes.
+Get up and running with Cortex 2.5.9 in less than 5 minutes.
 
 ## 1. Installation
 
