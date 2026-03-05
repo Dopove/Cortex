@@ -71,7 +71,7 @@ jobs:
           if [ "${{ matrix.method }}" == "powershell-ps1" ]; then
             # Windows verification needs powershell context if run via bash
             powershell -Command "
-              \$env:Path += ';'\$env:USERPROFILE + '\.local\bin'
+              \$env:Path += \";\$env:USERPROFILE\.local\bin\"
               cortex --version
               cortex init
             "
