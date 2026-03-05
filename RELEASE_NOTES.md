@@ -1,3 +1,23 @@
+# Release Notes: Cortex v2.5.9
+
+Cortex v2.5.9 introduces **Comprehensive Multi-OS E2E Testing** and **Raw Binary Release Assets**. This release focuses on robust CI/CD pipelines assuring stability across all supported platforms.
+
+## 🛠️ CI/CD & Testing
+
+- **Multi-OS E2E Pipeline**: Automated End-to-End testing across Ubuntu, macOS (Intel & Apple Silicon), and Windows.
+- **Automated Adversarial Testing**: Python fuzzing and adversarial payload tests integrated directly into the CI pipeline `multi-test.yml`.
+- **Bundle Execution Verification**: GitHub actions now automatically build and run the `autogen-agent` bundle to verify execution integrity on every push.
+
+## 📦 Release Automation
+
+- **Raw Binary Assets**: GitHub Releases now include the raw compiled `cortex` (and `cortex.exe`) binaries alongside the standard `.tar.gz` and `.zip` archives.
+- **Fixed Permissions**: Resolved `403 Forbidden` errors during automated release notes generation by explicitly granting `contents: write` and `pull-requests: read` permissions.
+- **Standardized Naming**: GitHub Releases are now automatically titled in the format "Cortex {version} Stable Release", incorporating automated release notes.
+
+---
+
+**Status**: `CORTEX v2.5.9 PRODUCTION READY`
+
 # Release Notes: Cortex v2.5.2
 
 Cortex v2.5.2 introduces **Split Networking Architecture** and **Kubernetes Super-Pod** alignment. This release focuses on ultra-low latency egress for cloud model providers and enterprise-grade isolation.
