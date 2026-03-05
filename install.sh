@@ -18,6 +18,11 @@ echo -e "${BLUE}Cortex Professional Installer Starting...${NC}"
 command -v curl >/dev/null 2>&1 || { echo -e >&2 "${RED}Error: curl is required.${NC}"; exit 1; }
 command -v tar >/dev/null 2>&1 || { echo -e >&2 "${RED}Error: tar is required.${NC}"; exit 1; }
 
+# Check for Python (runtime dependency)
+if ! command -v python3 >/dev/null 2>&1; then
+    echo -e "${YELLOW}Warning: python3 is not installed. Cortex requires Python 3.11.1+${NC}"
+fi
+
 # 2. Version Discovery
 echo -e "${BLUE}Detecting latest version...${NC}"
 # Use GitHub API to find latest release tag
