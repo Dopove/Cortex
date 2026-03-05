@@ -25,9 +25,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "Linux (Ubuntu)"
+          - name: "Linux (Ubuntu/Debian)"
             os: ubuntu-latest
             method: bash-sh
+          - name: "Linux (Fedora/Arch)"
+            os: ubuntu-latest
+            method: docker-fedora
           - name: "macOS (Intel)"
             os: macos-12
             method: bash-sh
@@ -59,6 +62,18 @@ jobs:
               echo "Testing via Bash installer..."
               bash install.sh
               ;;
+            docker-fedora)
+              echo "Testing on Fedora via Docker (Distro Compatibility Check)..."
+              docker run --rm -v $(pwd):/workspace -w /workspace fedora:latest bash -c "
+                dnf install -y grep findutils curl python3.11 python3.11-libs && 
+                ln -sf /usr/bin/python3.11 /usr/bin/python3 && 
+                ldconfig && 
+                bash install.sh && 
+                export PATH=\$HOME/.local/bin:\$PATH && 
+                cortex --version && 
+                cortex init
+              "
+              ;;
             powershell-ps1)
               echo "Testing via PowerShell installer..."
               powershell -ExecutionPolicy Bypass -File install.ps1
@@ -66,6 +81,7 @@ jobs:
           esac
 
       - name: Verify Installation
+        if: matrix.method != 'docker-fedora'
         shell: bash
         run: |
           if [ "${{ matrix.method }}" == "powershell-ps1" ]; then
