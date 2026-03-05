@@ -83,4 +83,4 @@ Write-Host "Try running: cortex --version" -ForegroundColor Blue
 Write-Host "========================================" -ForegroundColor Green
 
 # Cleanup
-Remove-Item -Path $TMP_DIR -Recurigid -Force -ErrorAction SilentlyContinue
+Remove-Item -Path $TMP_DIR -Recurse -Force -ErrorAction SilentlyContinue
