@@ -21,7 +21,7 @@ jobs:
             target: aarch64-apple-darwin
             suffix: macos-arm64
             binary: cortex
-          - os: macos-13 # Specifically for Intel x64
+          - os: macos-14 # Standard stable runner
             target: x86_64-apple-darwin
             suffix: macos-amd64
             binary: cortex
