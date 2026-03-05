@@ -1,0 +1,43 @@
+name: One-Liner Installer Test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "install.sh"
+      - ".github/workflows/one-liner-test.yml"
+  pull_request:
+    paths:
+      - "install.sh"
+
+jobs:
+  test-installer:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust (Fallback Build Test)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run Installer
+        shell: bash
+        run: |
+          # Test local file execution (simulating curl | bash)
+          bash install.sh
+
+      - name: Verify Installation
+        shell: bash
+        run: |
+          # Ensure bin dir is in path for the rest of the job
+          export PATH="$HOME/.local/bin:$PATH"
+
+          echo "Checking version..."
+          cortex --version
+
+          echo "Checking init..."
+          cortex init
