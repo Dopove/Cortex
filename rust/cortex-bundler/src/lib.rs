@@ -82,6 +82,7 @@ impl Bundler {
                     name: format!("agent_{}", entry_name.replace(".py", "").replace("/", "_")),
                     entry_point: entry_name.to_string(),
                     allow_network: false,
+                    allowed_ips: Vec::new(),
                     checksum,
                 });
                 break; // Use the first one found
@@ -147,8 +148,10 @@ impl Bundler {
         Ok(BundleManifest {
             package: cortex_core::PackageInfo {
                 name: "cortex-bundle".to_string(),
-                version: "2.0.0".to_string(),
-                description: Some("Cortex 2.0 Hardened Bundle".to_string()),
+                version: "2.5.2".to_string(),
+                description: Some("Cortex 2.5.2 Hardened Bundle".to_string()),
+                allow_network: true,
+                allowed_ips: Vec::new(),
             },
             agents,
             models,
