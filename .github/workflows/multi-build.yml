@@ -109,8 +109,18 @@ jobs:
         id: extract_notes
         shell: bash
         run: |
-          # Extract section between the first and second H1 headers
-          sed -n "/^# Release Notes: Cortex ${{ needs.build.outputs.version }}/,/^# Release Notes:/p" RELEASE_NOTES.md | sed '$d' > release_body.md
+          # 1. Create a "Quick Install" header with one-liners
+          cat <<EOF > release_body.md
+          ## 🚀 Quick Install (Unix)
+          \`\`\`bash
+          curl -sSL https://raw.githubusercontent.com/Dopove/Cortex/main/install.sh | bash
+          \`\`\`
+
+          ---
+          EOF
+
+          # 2. Extract section between the first and second H1 headers and append
+          sed -n "/^# Release Notes: Cortex ${{ needs.build.outputs.version }}/,/^# Release Notes:/p" RELEASE_NOTES.md | sed '$d' >> release_body.md
           echo "notes_path=release_body.md" >> $GITHUB_OUTPUT
 
       - name: Download All Binaries
