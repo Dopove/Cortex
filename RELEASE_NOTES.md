@@ -2,17 +2,16 @@
 
 Cortex v2.5.9 introduces **Direct-to-OS Binary Distribution** and **Multi-Platform Stability Fixes**. This release focuses on simplifying the global installation process and ensuring ultra-reliable performance across all supported operating systems.
 
-## 🚀 Key Improvements
+## 🚀 Key Features
 
 - **Global Binary Distribution**: GitHub Releases now include raw compiled `cortex` (and `cortex.exe`) binaries for instant deployment without local compilation.
-- **Cross-Platform Stability**: Resolved critical test failures on Windows and macOS, ensuring 100% behavior parity across Ubuntu, macOS (Intel/Silicon), and Windows.
-- **Modernized Installer**: Refactored `install.sh` to support high-speed binary-first installation with automatic architecture detection.
+- **Cross-Platform Stability**: Resolved critical test failures on Windows and macOS, ensuring 100% behavior parity across all supported systems.
+- **Modernized Installer**: Refactored `install.sh` and added `install.ps1` for high-speed, single-command global deployment.
 
-## 📦 Distribution Enhancements
+## 🛠️ Infrastructure & CI
 
-- **Professional Release Automation**: Integrated automated release notes extraction and standardized artifact naming conventions for a seamless rollout.
-- **Permission Optimization**: Streamlined GitHub Action permissions for secure and reliable publishing of release assets.
-- **Standardized Labels**: Unified Linux naming conventions (Ubuntu vs. Fedora/Arch) for better distribution clarity.
+- **Automated Rollout**: Improved release pipeline reliability with standardized naming and automated notes extraction.
+- **Unified Distribution**: Standardized Linux naming conventions (Ubuntu vs. Fedora/Arch) for consistent package discovery.
 
 ---
 
