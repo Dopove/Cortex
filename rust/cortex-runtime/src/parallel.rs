@@ -206,7 +206,9 @@ impl ParallelExecutor {
                     tokio::select! {
                         res = stdout.read(&mut stdout_buf) => {
                             match res {
-                                Ok(0) => {}, // EOF
+                                Ok(0) => {
+                                    // Handle EOF but keep loop if child still running or stderr has data
+                                },
                                 Ok(n) => {
                                     let data = String::from_utf8_lossy(&stdout_buf[..n]);
                                     print!("{}", data);
@@ -217,7 +219,7 @@ impl ParallelExecutor {
                         }
                         res = stderr.read(&mut stderr_buf) => {
                             match res {
-                                Ok(0) => {}, // EOF
+                                Ok(0) => {}, 
                                 Ok(n) => {
                                     let data = String::from_utf8_lossy(&stderr_buf[..n]);
                                     eprint!("{}", data);
@@ -228,6 +230,24 @@ impl ParallelExecutor {
                         }
                         status_res = child.wait() => {
                             let duration = task_start.elapsed().as_millis() as u64;
+                            
+                            // Drain remaining stdout/stderr before breaking
+                            let mut final_stdout = Vec::new();
+                            let _ = stdout.read_to_end(&mut final_stdout).await;
+                            if !final_stdout.is_empty() {
+                                let data = String::from_utf8_lossy(&final_stdout);
+                                print!("{}", data);
+                                captured_output.push_str(&data);
+                            }
+
+                            let mut final_stderr = Vec::new();
+                            let _ = stderr.read_to_end(&mut final_stderr).await;
+                            if !final_stderr.is_empty() {
+                                let data = String::from_utf8_lossy(&final_stderr);
+                                eprint!("{}", data);
+                                captured_output.push_str(&data);
+                            }
+
                             match status_res {
                                 Ok(status) => {
                                     if status.success() {

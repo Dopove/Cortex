@@ -146,10 +146,11 @@ impl Drop for ZeroCopyBus {
 #[cfg(test)]
 mod tests {
     #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     use super::*;
 
     #[test]
-    #[cfg(unix)]
+    #[cfg(target_os = "linux")]
     fn test_zero_copy_bus_latency_and_rw() {
         let bus = ZeroCopyBus::new(1024 * 1024).unwrap(); // 1MB shared buffer
 
