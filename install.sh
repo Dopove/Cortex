@@ -113,8 +113,13 @@ fi
 echo -e "${BLUE}Installing binary to $INSTALL_DIR...${NC}"
 
 if [ "$INSTALL_DIR" == "/usr/local/bin" ]; then
-    sudo cp "$BINARY_PATH" "$INSTALL_DIR/cortex"
-    sudo chmod +x "$INSTALL_DIR/cortex"
+    if command -v sudo >/dev/null 2>&1; then
+        sudo cp "$BINARY_PATH" "$INSTALL_DIR/cortex"
+        sudo chmod +x "$INSTALL_DIR/cortex"
+    else
+        cp "$BINARY_PATH" "$INSTALL_DIR/cortex"
+        chmod +x "$INSTALL_DIR/cortex"
+    fi
 else
     mkdir -p "$INSTALL_DIR"
     cp "$BINARY_PATH" "$INSTALL_DIR/cortex"
