@@ -340,10 +340,11 @@ mod tests {
     async fn test_parallel_execution() -> Result<()> {
         std::env::set_var("CORTEX_NO_ISOLATION", "1");
         let executor = ParallelExecutor::new(2);
+        let command = if cfg!(windows) { "echo hello world" } else { "echo 'hello world'" };
         let task = Task {
             id: 1,
             name: "test-echo".to_string(),
-            command: "echo 'hello world'".to_string(),
+            command: command.to_string(),
             cwd: std::env::current_dir()?,
             env: HashMap::new(),
             timeout_secs: 60,
@@ -369,10 +370,11 @@ mod tests {
         let mut env = HashMap::new();
         env.insert("CORTEX_TEST_VAR".to_string(), "cortex-value".to_string());
 
+        let command = if cfg!(windows) { "echo %CORTEX_TEST_VAR%" } else { "echo $CORTEX_TEST_VAR" };
         let task = Task {
             id: 2,
             name: "test-env".to_string(),
-            command: "echo $CORTEX_TEST_VAR".to_string(),
+            command: command.to_string(),
             cwd: std::env::current_dir()?,
             env,
             timeout_secs: 60,
