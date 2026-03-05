@@ -15,19 +15,23 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            suffix: linux-amd64
+            suffix: x64_ubuntu
+            binary: cortex
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            suffix: x64_fedora_arch
             binary: cortex
           - os: macos-14 # Specifically for Apple Silicon (macOS 14+)
             target: aarch64-apple-darwin
-            suffix: macos-arm64
+            suffix: arm64_macos
             binary: cortex
           - os: macos-14 # Standard stable runner
             target: x86_64-apple-darwin
-            suffix: macos-amd64
+            suffix: x64_macos
             binary: cortex
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            suffix: windows-amd64
+            suffix: x64_windows
             binary: cortex.exe
 
     steps:

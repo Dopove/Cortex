@@ -1,10 +1,8 @@
-use anyhow::{Result, anyhow};
-use std::fs::File;
-use std::io::Write;
+use anyhow::Result;
 #[cfg(unix)]
-use std::os::unix::io::{AsRawFd, FromRawFd};
+use std::os::unix::io::AsRawFd;
 #[cfg(windows)]
-use std::os::windows::io::{AsRawHandle, FromRawHandle};
+use std::os::windows::io::AsRawHandle;
 use tracing::info;
 
 pub struct SecretManager;
@@ -16,6 +14,11 @@ impl SecretManager {
         
         #[cfg(target_os = "linux")]
         {
+            use anyhow::anyhow;
+            use std::fs::File;
+            use std::io::Write;
+            use std::os::unix::io::FromRawFd;
+
             let name = std::ffi::CString::new(label)?;
             let fd = unsafe { libc::memfd_create(name.as_ptr(), 0) };
             
@@ -32,6 +35,7 @@ impl SecretManager {
         }
         #[cfg(all(unix, not(target_os = "linux")))]
         {
+            use std::io::Write;
             // Fallback for macOS/BSD: Use a temporary file in /tmp or shm_open
             // For now, we'll use a temporary file and return its FD.
             // In a future hardening pass, shm_open will be used.
@@ -44,6 +48,8 @@ impl SecretManager {
         }
         #[cfg(windows)]
         {
+            use std::io::Write;
+            use std::fs::File;
             // Windows: Use temporary files as there is no direct memfd equivalent for handle passing in this logic.
             let mut path = std::env::temp_dir();
             path.push(format!("cortex_secret_{}.tmp", label));

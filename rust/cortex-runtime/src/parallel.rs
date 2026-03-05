@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::process::Command;
 use tracing::{debug, error, info};
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 use std::os::unix::io::{BorrowedFd, RawFd};
 
 #[derive(Debug, Clone)]

@@ -26,7 +26,7 @@ unsafe impl Sync for ZeroCopyBus {}
 
 impl ZeroCopyBus {
     /// Creates a new anonymous shared memory region of `size` bytes.
-    pub fn new(_size: usize) -> anyhow::Result<Self> {
+    pub fn new(size: usize) -> anyhow::Result<Self> {
         #[cfg(unix)]
         {
             use std::os::fd::FromRawFd;
