@@ -41,9 +41,15 @@ $ZIP_FILE = Join-Path $TMP_DIR "cortex.zip"
 try {
     Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile $ZIP_FILE
     Expand-Archive -Path $ZIP_FILE -DestinationPath $TMP_DIR -Force
-    $BINARY_PATH = Join-Path $TMP_DIR "cortex.exe"
+    # Find the binary (it might be named cortex.exe or cortex_v2.5.9_x64_windows.exe)
+    $BINARY_PATH = Get-ChildItem -Path $TMP_DIR -Filter "cortex*.exe" | Select-Object -First 1 | ForEach-Object { $_.FullName }
 } catch {
     Write-Host "Error: Failed to download or extract binary. Please check your internet connection or the release status." -ForegroundColor Red
+    exit 1
+}
+
+if (-not $BINARY_PATH) {
+    Write-Host "Error: Could not find cortex.exe in extracted archive." -ForegroundColor Red
     exit 1
 }
 

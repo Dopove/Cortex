@@ -85,15 +85,21 @@ echo -e "${BLUE}Downloading binary from: $DOWNLOAD_URL${NC}"
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
-if curl -L --fail "$DOWNLOAD_URL" -o "cortex.${EXT}"; then
-    if [ "$EXT" == "zip" ]; then
-        unzip cortex.zip
-    else
-        tar -xzf cortex.tar.gz
-    fi
-    BINARY_PATH="cortex"
+BINARY_ARCHIVE="cortex.${EXT}"
+
+if curl -L --fail "$DOWNLOAD_URL" -o "$BINARY_ARCHIVE"; then
     if [ "$OS" == "Windows" ]; then
-        BINARY_PATH="cortex.exe"
+        unzip -q "$BINARY_ARCHIVE" -d "$TMP_DIR"
+        BINARY_PATH=$(find "$TMP_DIR" -name "cortex*.exe" -type f | head -n 1)
+    else
+        tar -xzf "$BINARY_ARCHIVE" -C "$TMP_DIR"
+        # Find the binary (it might be named cortex or cortex_vX.Y.Z_...)
+        BINARY_PATH=$(find "$TMP_DIR" -name "cortex*" -type f -not -name "*.sh" -not -name "*.tar.gz" | head -n 1)
+    fi
+
+    if [ -z "$BINARY_PATH" ] || [ ! -f "$BINARY_PATH" ]; then
+        echo -e "${RED}Error: Could not find cortex binary in extracted archive.${NC}"
+        exit 1
     fi
 else
     echo -e "${YELLOW}Binary not found for your platform. Falling back to source build...${NC}"
