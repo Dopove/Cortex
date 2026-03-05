@@ -92,6 +92,17 @@ jobs:
       contents: write
       pull-requests: read
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Release Notes
+        id: extract_notes
+        shell: bash
+        run: |
+          # Extract section between the first and second H1 headers
+          sed -n '/^# Release Notes: Cortex ${{ github.ref_name }}/,/^# Release Notes:/p' RELEASE_NOTES.md | sed '$d' > release_body.md
+          echo "notes_path=release_body.md" >> $GITHUB_OUTPUT
+
       - name: Download All Binaries
         uses: actions/download-artifact@v4
         with:
@@ -102,7 +113,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Cortex ${{ github.ref_name }} Stable Release
+          body_path: release_body.md
           files: release_artifacts/*
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
