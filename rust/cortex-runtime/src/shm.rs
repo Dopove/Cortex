@@ -31,6 +31,7 @@ impl ZeroCopyBus {
         {
             use std::os::fd::FromRawFd;
 
+            #[cfg(target_os = "linux")]
             let fd_name = std::ffi::CString::new("cortex_zero_copy_bus").unwrap();
             
             #[cfg(target_os = "linux")]
@@ -144,6 +145,7 @@ impl Drop for ZeroCopyBus {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
     use super::*;
 
     #[test]

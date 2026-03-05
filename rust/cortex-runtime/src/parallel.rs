@@ -318,6 +318,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parallel_execution() -> Result<()> {
+        std::env::set_var("CORTEX_NO_ISOLATION", "1");
         let executor = ParallelExecutor::new(2);
         let task = Task {
             id: 1,
@@ -328,6 +329,9 @@ mod tests {
             timeout_secs: 60,
             allow_network: false,
             session_id: "test-session".to_string(),
+            macvlan_iface: None,
+            allowed_ips: vec![],
+            secret_fds: HashMap::new(),
         };
 
         let (results, metrics) = executor.execute(vec![task]).await?;
@@ -340,6 +344,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_parallel_env_vars() -> Result<()> {
+        std::env::set_var("CORTEX_NO_ISOLATION", "1");
         let executor = ParallelExecutor::new(2);
         let mut env = HashMap::new();
         env.insert("CORTEX_TEST_VAR".to_string(), "cortex-value".to_string());
@@ -353,6 +358,9 @@ mod tests {
             timeout_secs: 60,
             allow_network: false,
             session_id: "test-session".to_string(),
+            macvlan_iface: None,
+            allowed_ips: vec![],
+            secret_fds: HashMap::new(),
         };
 
         let (results, metrics) = executor.execute(vec![task]).await?;
@@ -363,6 +371,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_timeout_handling() -> Result<()> {
+        std::env::set_var("CORTEX_NO_ISOLATION", "1");
         let executor = ParallelExecutor::new(1);
         let task = Task {
             id: 3,
@@ -373,6 +382,9 @@ mod tests {
             timeout_secs: 2,
             allow_network: false,
             session_id: "test-session".to_string(),
+            macvlan_iface: None,
+            allowed_ips: vec![],
+            secret_fds: HashMap::new(),
         };
 
         let (results, metrics) = executor.execute(vec![task]).await?;

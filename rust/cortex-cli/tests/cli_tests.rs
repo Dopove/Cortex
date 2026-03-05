@@ -33,7 +33,7 @@ fn test_cli_run_invalid_path() {
         .arg("/non/existent/path.cortex")
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Bundle not found"));
+        .stderr(predicate::str::contains("Failed to read bundle file"));
 }
 
 #[test]

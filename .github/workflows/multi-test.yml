@@ -75,15 +75,4 @@ jobs:
 
       - name: Run E2E Execution Test
         shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            BIN_PATH="rust/target/${{ matrix.target }}/release/cortex.exe"
-          else
-            BIN_PATH="rust/target/${{ matrix.target }}/release/cortex"
-          fi
-
-          echo "Building test bundle..."
-          $BIN_PATH build examples/autogen-agent examples/autogen-agent.cortex
-
-          echo "Running test bundle..."
-          $BIN_PATH run examples/autogen-agent.cortex
+        run: bash rust/tests/cross_os_e2e.sh
