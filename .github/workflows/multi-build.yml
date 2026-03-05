@@ -21,11 +21,11 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            suffix: x64_ubuntu
+            suffix: x64_linux_ubuntu
             binary: cortex
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            suffix: x64_fedora_arch
+            suffix: x64_linux_fedora_arch
             binary: cortex
           - os: macos-14 # Specifically for Apple Silicon (macOS 14+)
             target: aarch64-apple-darwin
