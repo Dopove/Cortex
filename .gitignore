@@ -5,6 +5,7 @@ target/
 .agent/
 .agents/
 .repomixignore
+repomix.md
 
 # Cortex Binaries/Bundles
 cortex

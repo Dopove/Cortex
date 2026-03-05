@@ -64,19 +64,19 @@ jobs:
           # Include the installation and management scripts from root
           cp ../install.sh release_dist/
 
-          # Create compressed archive
+          # Create compressed archive with custom naming: cortex_version_suffix
           if [ "${{ runner.os }}" == "Windows" ]; then
             # Windows runner has 7z in path
-            7z a ../cortex-${{ matrix.suffix }}.zip ./release_dist/*
+            7z a ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.zip ./release_dist/*
           else
-            tar -czf ../cortex-${{ matrix.suffix }}.tar.gz -C release_dist .
+            tar -czf ../cortex_${{ github.ref_name }}_${{ matrix.suffix }}.tar.gz -C release_dist .
           fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.suffix }}
-          path: cortex-${{ matrix.suffix }}.*
+          name: cortex_${{ github.ref_name }}_${{ matrix.suffix }}
+          path: cortex_${{ github.ref_name }}_${{ matrix.suffix }}.*
 
   publish:
     name: Publish GitHub Release

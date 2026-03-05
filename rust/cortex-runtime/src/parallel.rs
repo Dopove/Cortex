@@ -4,7 +4,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::process::Command;
 use tracing::{debug, error, info};
-use std::os::unix::io::{AsRawFd, BorrowedFd, RawFd};
+#[cfg(unix)]
+use std::os::unix::io::{BorrowedFd, RawFd};
 
 #[derive(Debug, Clone)]
 pub struct Task {
@@ -88,9 +89,9 @@ impl ParallelExecutor {
 
                 cmd.current_dir(&task.cwd).envs(&task.env);
 
-                #[cfg(unix)]
+                #[cfg(target_os = "linux")]
                 let mut sync_pipe: Option<(RawFd, RawFd)> = None;
-                #[cfg(unix)]
+                #[cfg(target_os = "linux")]
                 if task.macvlan_iface.is_some() {
                     if let Ok((rx, tx)) = nix::unistd::pipe() {
                         use std::os::unix::io::IntoRawFd;
@@ -98,7 +99,7 @@ impl ParallelExecutor {
                     }
                 }
 
-                #[cfg(unix)]
+                #[cfg(target_os = "linux")]
                 {
                     // Establish ZeroCopyBus for 0.05ms hardware latency shared memory message passing
                     if let Ok(bus) = crate::shm::ZeroCopyBus::new(1024 * 1024) {
@@ -168,7 +169,7 @@ impl ParallelExecutor {
                 };
 
                 // Parent-side sync
-                #[cfg(unix)]
+                #[cfg(target_os = "linux")]
                 if let (Some(iface), Some((rx, tx))) = (&task.macvlan_iface, sync_pipe) {
                     // 1. Wait for READY from child
                     let mut buf = [0u8; 1];

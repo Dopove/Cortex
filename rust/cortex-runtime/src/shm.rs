@@ -3,6 +3,7 @@ use nix::sys::mman::{mmap, munmap, MapFlags, ProtFlags};
 #[cfg(unix)]
 use std::num::NonZeroUsize;
 
+#[cfg(unix)]
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// A fixed-size shared memory ring buffer for Zero-Copy inter-process communication.
@@ -25,21 +26,30 @@ unsafe impl Sync for ZeroCopyBus {}
 
 impl ZeroCopyBus {
     /// Creates a new anonymous shared memory region of `size` bytes.
-    pub fn new(size: usize) -> anyhow::Result<Self> {
+    pub fn new(_size: usize) -> anyhow::Result<Self> {
         #[cfg(unix)]
         {
             use std::os::fd::FromRawFd;
 
             let fd_name = std::ffi::CString::new("cortex_zero_copy_bus").unwrap();
+            
+            #[cfg(target_os = "linux")]
             let raw_fd = unsafe { libc::memfd_create(fd_name.as_ptr(), libc::MFD_ALLOW_SEALING) };
+            #[cfg(not(target_os = "linux"))]
+            let raw_fd = -1; // Placeholder for non-linux POSIX systems without memfd
+
             if raw_fd == -1 {
-                return Err(anyhow::anyhow!("Failed to create memfd"));
+                return Err(anyhow::anyhow!("Failed to create memfd (unsupported OS or capacity)"));
             }
 
             let fd = unsafe { std::os::fd::OwnedFd::from_raw_fd(raw_fd) };
 
             // Set size
+            #[cfg(target_os = "linux")]
             let ret = unsafe { libc::ftruncate(raw_fd, size as libc::off_t) };
+            #[cfg(not(target_os = "linux"))]
+            let ret = -1;
+
             if ret == -1 {
                 return Err(anyhow::anyhow!("Failed to resize memfd"));
             }
