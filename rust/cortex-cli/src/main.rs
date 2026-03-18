@@ -125,8 +125,11 @@ async fn main() -> Result<()> {
                 "Building Cortex bundle from {:?} to {:?}",
                 project_dir, output
             );
-            let bundler = cortex_bundler::Bundler::new(project_dir, output);
+            let bundler = cortex_bundler::Bundler::new(project_dir, output.clone());
             bundler.run_bundle_pipeline().await?;
+
+            info!("Pre-warming execution environment for faster first run...");
+            cortex_runtime::Orchestrator::prewarm_bundle(&output).await?;
         }
         Commands::Run { bundle, gpu } => {
             info!("Executing Cortex bundle {:?}", bundle);

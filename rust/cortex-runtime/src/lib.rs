@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
-use std::path::PathBuf;
-use tracing::{info, warn};
+use std::path::{Path, PathBuf};
+use tracing::{info, warn, debug};
+use sha2::{Digest, Sha256};
+use std::fs;
 
 mod crypto;
 pub mod evaluation;
@@ -20,6 +22,95 @@ pub mod tokenizer;
 pub struct Orchestrator;
 
 impl Orchestrator {
+    /// Calculate a SHA-256 hash of the bundle file to use as a cache key
+    fn calculate_bundle_hash(path: &Path) -> Result<String> {
+        let mut file = fs::File::open(path)?;
+        let mut hasher = Sha256::new();
+        std::io::copy(&mut file, &mut hasher)?;
+        Ok(hex::encode(hasher.finalize()))
+    }
+
+    /// Get the persistent cache directory for a bundle hash
+    fn get_cache_dir(bundle_hash: &str) -> Result<PathBuf> {
+        let home_dir = dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
+        let cache_dir = home_dir.join(".cortex").join("cache").join("runs").join(bundle_hash);
+        fs::create_dir_all(&cache_dir)?;
+        Ok(cache_dir)
+    }
+
+    /// Check if 'uv' is available in the system
+    fn is_uv_available() -> bool {
+        std::process::Command::new("uv")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+
+    /// Pre-warms the execution environment for a bundle.
+    /// This is intended to be called during 'cortex build' to ensure
+    /// that the first 'cortex run' is instant.
+    pub async fn prewarm_bundle(bundle_path: &PathBuf) -> Result<()> {
+        info!("Pre-warming execution environment for {:?}", bundle_path);
+        let bundle_hash = Self::calculate_bundle_hash(bundle_path)?;
+        let cache_dir = Self::get_cache_dir(&bundle_hash)?;
+        let run_dir = cache_dir.join("extracted");
+
+        // 1. Extract if not already done
+        if !run_dir.exists() {
+            fs::create_dir_all(&run_dir)?;
+            info!("Unpacking bundle to cache...");
+            let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
+            let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
+            let mut archive = tar::Archive::new(decoder);
+            archive.unpack(&run_dir)?;
+        }
+
+        // 2. Setup Dependencies
+        let req_path = run_dir.join("requirements.txt");
+        let venv_path = run_dir.join(".venv");
+
+        if req_path.exists() && !venv_path.exists() {
+            info!("Setting up isolated Python environment...");
+            let uv_available = Self::is_uv_available();
+            if uv_available {
+                std::process::Command::new("uv")
+                    .args(["venv", ".venv"])
+                    .current_dir(&run_dir)
+                    .status()?;
+                
+                info!("Installing dependencies with uv...");
+                std::process::Command::new("uv")
+                    .args(["pip", "install", "-r", "requirements.txt"])
+                    .current_dir(&run_dir)
+                    .status()?;
+            } else {
+                let base_python = if cfg!(windows) { "python" } else { "python3" };
+                std::process::Command::new(base_python)
+                    .args(["-m", "venv", ".venv"])
+                    .current_dir(&run_dir)
+                    .status()?;
+
+                let pip_cmd = if cfg!(windows) {
+                    venv_path.join("Scripts").join("pip")
+                } else {
+                    venv_path.join("bin").join("pip")
+                };
+
+                std::process::Command::new(&pip_cmd)
+                    .args(["install", "-r", "requirements.txt"])
+                    .current_dir(&run_dir)
+                    .status()?;
+            }
+        }
+
+        // 3. Setup Models
+        Self::setup_models(&run_dir).await?;
+
+        info!("✅ Pre-warm complete. Bundle is ready for Turbo execution.");
+        Ok(())
+    }
+
     pub async fn execute(bundle_path: &PathBuf, gpu_id: Option<u32>, is_turbo: bool) -> Result<()> {
         let manifest = inspect::InspectEngine::get_manifest(bundle_path)?;
         let session_id = format!("{}-{}", manifest.package.name, std::process::id());
@@ -48,7 +139,6 @@ impl Orchestrator {
         }
 
         // 1. Resource Availability Check (Cortex 2.0 Guard)
-        // Adjust default requirement for examples (1GB) vs defaults (50GB)
         let bundle_str = bundle_path.to_str().unwrap_or("");
         let required_gb = if bundle_str.contains("flask")
             || bundle_str.contains("actix")
@@ -82,127 +172,122 @@ impl Orchestrator {
         let _kv_manager = kv_cache::KVCacheManager::new(cache_limit_gb);
         info!("KV Cache Manager initialized ({}GB limit)", cache_limit_gb);
 
-        // 3. Extract Bundle to Temporary Directory
-        let manifest = inspect::InspectEngine::get_manifest(bundle_path)?;
-        if manifest.agents.is_empty() {
-            info!("No agents found in bundle to execute.");
-            return Ok(());
-        }
+        // 3. Persistent Execution Environment
+        let bundle_hash = Self::calculate_bundle_hash(bundle_path)?;
+        let cache_dir = Self::get_cache_dir(&bundle_hash)?;
+        let run_dir = cache_dir.join("extracted");
+        
+        if !run_dir.exists() {
+            fs::create_dir_all(&run_dir)?;
+            info!("Unpacking bundle to persistent execution environment at {:?} ...", run_dir);
 
-        let temp_dir = tempfile::tempdir()?;
-        info!("Unpacking bundle to temporary execution environment at {:?} ...", temp_dir.path());
-
-        let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
-        let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
-        let mut archive = tar::Archive::new(decoder);
-        archive.unpack(temp_dir.path())?;
-
-        // DEBUG: List files in temp_dir
-        if let Ok(entries) = std::fs::read_dir(temp_dir.path()) {
-            for entry in entries.flatten() {
-                info!("Extracted bundle file: {:?}", entry.file_name());
-            }
+            let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
+            let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
+            let mut archive = tar::Archive::new(decoder);
+            archive.unpack(&run_dir)?;
+        } else {
+            debug!("Using cached execution environment at {:?}", run_dir);
         }
 
         // 4. Setup Networking if requested
-    let mut macvlan_iface = None;
-    if manifest.package.allow_network {
-        match network::NetworkManager::detect_default_interface() {
-            Ok(parent) => {
-                let ifname = format!("mc_{}", &session_id[..8]);
-                if let Err(e) = network::NetworkManager::create_macvlan(&ifname, &parent) {
-                    warn!("Failed to create macvlan interface {}: {}. Falling back to standard bridge.", ifname, e);
-                } else {
-                    macvlan_iface = Some(ifname);
+        let mut macvlan_iface = None;
+        if manifest.package.allow_network {
+            match network::NetworkManager::detect_default_interface() {
+                Ok(parent) => {
+                    let ifname = format!("mc_{}", &session_id[..8]);
+                    if let Err(e) = network::NetworkManager::create_macvlan(&ifname, &parent) {
+                        warn!("Failed to create macvlan interface {}: {}. Falling back to standard bridge.", ifname, e);
+                    } else {
+                        macvlan_iface = Some(ifname);
+                    }
+                }
+                Err(e) => {
+                    warn!("Could not detect default interface for macvlan: {}. Falling back to standard bridge.", e);
                 }
             }
-            Err(e) => {
-                warn!("Could not detect default interface for macvlan: {}. Falling back to standard bridge.", e);
-            }
         }
-    }
 
-    // 5. Setup Dependencies if needed
-        let req_path = temp_dir.path().join("requirements.txt");
-        let mut python_cmd = "python3".to_string(); // Default to python3
+        // 5. Setup Dependencies if needed
+        let req_path = run_dir.join("requirements.txt");
+        let venv_path = run_dir.join(".venv");
+        let mut python_cmd = if cfg!(windows) { "python".to_string() } else { "python3".to_string() };
 
         if req_path.exists() {
-            info!("Found requirements.txt, setting up isolated Python environment...");
-            let venv_path = temp_dir.path().join(".venv");
-            info!("Venv target path: {:?}", venv_path);
+            if !venv_path.exists() {
+                info!("Found requirements.txt, setting up isolated Python environment...");
+                
+                let uv_available = Self::is_uv_available();
+                if uv_available {
+                    info!("⚡ Using 'uv' for high-speed dependency resolution");
+                    let venv_status = std::process::Command::new("uv")
+                        .args(["venv", ".venv"])
+                        .current_dir(&run_dir)
+                        .status()?;
+                    
+                    if !venv_status.success() {
+                        return Err(anyhow::anyhow!("Failed to create venv with uv"));
+                    }
 
-            // Use python3 if available, otherwise python
-            let base_python = if cfg!(windows) { "python" } else { "python3" };
-            info!("Using base python: {}", base_python);
+                    info!("Installing bundle dependencies with uv...");
+                    let pip_status = std::process::Command::new("uv")
+                        .args(["pip", "install", "-r", "requirements.txt"])
+                        .current_dir(&run_dir)
+                        .status()?;
+                    
+                    if !pip_status.success() {
+                        return Err(anyhow::anyhow!("Failed to install dependencies with uv"));
+                    }
+                } else {
+                    info!("Setting up isolated Python environment using standard venv...");
+                    let base_python = if cfg!(windows) { "python" } else { "python3" };
+                    let status = std::process::Command::new(base_python)
+                        .args(["-m", "venv", ".venv"])
+                        .current_dir(&run_dir)
+                        .status()?;
 
-            let status = std::process::Command::new(base_python)
-                .args(["-m", "venv", ".venv"]) // Just use relative path since we set current_dir
-                .current_dir(temp_dir.path())
-                .status()?;
+                    if !status.success() {
+                        return Err(anyhow::anyhow!("Failed to create Python virtual environment"));
+                    }
 
-            info!("Venv creation command finished with status: {:?}", status);
+                    let pip_cmd = if cfg!(windows) {
+                        venv_path.join("Scripts").join("pip")
+                    } else {
+                        venv_path.join("bin").join("pip")
+                    };
 
-            if !status.success() {
-                return Err(anyhow::anyhow!(
-                    "Failed to create Python virtual environment: {:?}", status
-                ));
-            }
+                    info!("Installing bundle dependencies with pip...");
+                    let pip_status = std::process::Command::new(&pip_cmd)
+                        .args(["install", "-r", "requirements.txt"])
+                        .current_dir(&run_dir)
+                        .status()?;
 
-            let pip_cmd = if cfg!(windows) {
-                venv_path.join("Scripts").join("pip")
+                    if !pip_status.success() {
+                        return Err(anyhow::anyhow!("Failed to install dependencies from requirements.txt"));
+                    }
+                }
             } else {
-                venv_path.join("bin").join("pip")
-            };
-            info!("Pip command path: {:?}", pip_cmd);
-
-            info!("Installing bundle dependencies...");
-            let pip_status = std::process::Command::new(&pip_cmd)
-                .args(["install", "-r", "requirements.txt"])
-                .current_dir(temp_dir.path())
-                .status()?;
-
-            info!("Pip installation finished with status: {:?}", pip_status);
-
-            if !pip_status.success() {
-                return Err(anyhow::anyhow!(
-                    "Failed to install dependencies from requirements.txt"
-                ));
+                debug!("Reusing existing virtual environment at {:?}", venv_path);
             }
 
             python_cmd = if cfg!(windows) {
-                venv_path
-                    .join("Scripts")
-                    .join("python")
-                    .to_str()
-                    .unwrap()
-                    .to_string()
+                venv_path.join("Scripts").join("python").to_str().unwrap().to_string()
             } else {
-                venv_path
-                    .join("bin")
-                    .join("python")
-                    .to_str()
-                    .unwrap()
-                    .to_string()
+                venv_path.join("bin").join("python").to_str().unwrap().to_string()
             };
-
-            info!(
-                "Dependencies installed. Using isolated python at: {}",
-                python_cmd
-            );
         }
 
         let mut common_env = std::collections::HashMap::new();
         let pypath = if cfg!(windows) {
             format!(
                 "{};{}",
-                temp_dir.path().display(),
-                temp_dir.path().join("src").display()
+                run_dir.display(),
+                run_dir.join("src").display()
             )
         } else {
             format!(
                 "{}:{}",
-                temp_dir.path().display(),
-                temp_dir.path().join("src").display()
+                run_dir.display(),
+                run_dir.join("src").display()
             )
         };
         common_env.insert("PYTHONPATH".to_string(), pypath);
@@ -221,12 +306,12 @@ impl Orchestrator {
         secrets::SecretManager::redact_env(&mut common_env);
 
         // 5. Initialize Models (Ollama sidecar and automatic pulling)
-        Self::setup_models(temp_dir.path()).await?;
+        Self::setup_models(&run_dir).await?;
 
         // 6. Initialize Executors based on Mode
         if is_turbo {
             info!(
-                "Spawning {} agents in Parallel Turbo Mode...",
+                "⚡ Spawning {} agents in Parallel Turbo Mode...",
                 manifest.agents.len()
             );
             let num_workers = if profile.physical_cores > 0 {
@@ -249,7 +334,7 @@ impl Orchestrator {
                     id: i,
                     name: agent.name.clone(),
                     command,
-                    cwd: temp_dir.path().to_path_buf(),
+                    cwd: run_dir.to_path_buf(),
                     env: common_env.clone(),
                     timeout_secs: 600,
                     allow_network: agent.allow_network,
@@ -282,7 +367,7 @@ impl Orchestrator {
                 id: 0,
                 name: primary_agent.name.clone(),
                 command,
-                cwd: temp_dir.path().to_path_buf(),
+                cwd: run_dir.to_path_buf(),
                 env: common_env.clone(),
                 timeout_secs: 600,
                 allow_network: primary_agent.allow_network,
@@ -297,7 +382,6 @@ impl Orchestrator {
             info!("Final Execution Metrics: {:?}", metrics);
         }
 
-        // Temp dir is automatically cleaned up when dropped
         Ok(())
     }
 
@@ -421,12 +505,19 @@ impl Orchestrator {
         std::fs::create_dir_all(&stdlib_dir)?;
 
         let venv_path = stdlib_dir.join(".venv");
+        let uv_available = Self::is_uv_available();
 
         if !venv_path.exists() {
             info!("Creating central virtual environment...");
-            std::process::Command::new("python3")
-                .args(["-m", "venv", venv_path.to_str().unwrap()])
-                .status()?;
+            if uv_available {
+                std::process::Command::new("uv")
+                    .args(["venv", venv_path.to_str().unwrap()])
+                    .status()?;
+            } else {
+                std::process::Command::new("python3")
+                    .args(["-m", "venv", venv_path.to_str().unwrap()])
+                    .status()?;
+            }
         }
 
         let pip_cmd = if cfg!(windows) {
@@ -447,10 +538,19 @@ impl Orchestrator {
             "duckduckgo-search",
         ];
 
-        let status = std::process::Command::new(&pip_cmd)
-            .arg("install")
-            .args(&common_packages)
-            .status()?;
+        let status = if uv_available {
+            info!("⚡ Using 'uv' for high-speed pre-warming");
+            std::process::Command::new("uv")
+                .args(["pip", "install"])
+                .args(&common_packages)
+                .env("VIRTUAL_ENV", &venv_path)
+                .status()?
+        } else {
+            std::process::Command::new(&pip_cmd)
+                .arg("install")
+                .args(&common_packages)
+                .status()?
+        };
 
         if !status.success() {
             return Err(anyhow::anyhow!("Failed to pre-warm packages."));
