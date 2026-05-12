@@ -48,66 +48,69 @@ impl Orchestrator {
     }
 
     /// Pre-warms the execution environment for a bundle.
-    /// This is intended to be called during 'cortex build' to ensure
-    /// that the first 'cortex run' is instant.
     pub async fn prewarm_bundle(bundle_path: &PathBuf) -> Result<()> {
-        info!("Pre-warming execution environment for {:?}", bundle_path);
+        info!("Preparing execution environment for {:?}", bundle_path);
         let bundle_hash = Self::calculate_bundle_hash(bundle_path)?;
         let cache_dir = Self::get_cache_dir(&bundle_hash)?;
-        let run_dir = cache_dir.join("extracted");
+        let venv_path = cache_dir.join(".venv");
+        let req_path_in_cache = cache_dir.join("requirements.txt");
+        let prepared_marker = cache_dir.join(".cortex_prepared");
 
-        // 1. Extract if not already done
-        if !run_dir.exists() {
-            fs::create_dir_all(&run_dir)?;
-            info!("Unpacking bundle to cache...");
+        if !prepared_marker.exists() {
+            info!("Environment not prepared for bundle '{:?}'. Setting up...", bundle_path);
+
+            // 1. Unpack the entire bundle to cache_dir
             let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
             let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
             let mut archive = tar::Archive::new(decoder);
-            archive.unpack(&run_dir)?;
-        }
+            archive.unpack(&cache_dir)?; // Unpack directly to cache_dir
 
-        // 2. Setup Dependencies
-        let req_path = run_dir.join("requirements.txt");
-        let venv_path = run_dir.join(".venv");
-
-        if req_path.exists() && !venv_path.exists() {
-            info!("Setting up isolated Python environment...");
-            let uv_available = Self::is_uv_available();
-            if uv_available {
-                std::process::Command::new("uv")
-                    .args(["venv", ".venv"])
-                    .current_dir(&run_dir)
-                    .status()?;
-                
-                info!("Installing dependencies with uv...");
-                std::process::Command::new("uv")
-                    .args(["pip", "install", "-r", "requirements.txt"])
-                    .current_dir(&run_dir)
-                    .status()?;
-            } else {
-                let base_python = if cfg!(windows) { "python" } else { "python3" };
-                std::process::Command::new(base_python)
-                    .args(["-m", "venv", ".venv"])
-                    .current_dir(&run_dir)
-                    .status()?;
-
-                let pip_cmd = if cfg!(windows) {
-                    venv_path.join("Scripts").join("pip")
+            // 2. Setup Persistent Python Dependencies in Cache
+            if req_path_in_cache.exists() && !venv_path.exists() {
+                info!("Setting up cached Python environment in {:?}", cache_dir);
+                let uv_available = Self::is_uv_available();
+                if uv_available {
+                    std::process::Command::new("uv")
+                        .args(["venv", ".venv"])
+                        .current_dir(&cache_dir)
+                        .status()?;
+                    
+                    info!("Installing dependencies with uv...");
+                    std::process::Command::new("uv")
+                        .args(["pip", "install", "-r", req_path_in_cache.to_str().unwrap()])
+                        .current_dir(&cache_dir)
+                        .status()?;
                 } else {
-                    venv_path.join("bin").join("pip")
-                };
+                    let base_python = if cfg!(windows) { "python" } else { "python3" };
+                    std::process::Command::new(base_python)
+                        .args(["-m", "venv", ".venv"])
+                        .current_dir(&cache_dir)
+                        .status()?;
 
-                std::process::Command::new(&pip_cmd)
-                    .args(["install", "-r", "requirements.txt"])
-                    .current_dir(&run_dir)
-                    .status()?;
+                    let pip_cmd = if cfg!(windows) {
+                        venv_path.join("Scripts").join("pip")
+                    } else {
+                        venv_path.join("bin").join("pip")
+                    };
+
+                    std::process::Command::new(&pip_cmd)
+                        .args(["install", "-r", req_path_in_cache.to_str().unwrap()])
+                        .current_dir(&cache_dir)
+                        .status()?;
+                }
+            } else if !req_path_in_cache.exists() {
+                 warn!("No requirements.txt found in bundle {:?}. Skipping Python environment setup.", bundle_path);
             }
+
+            // 3. Setup Models (uses manifest from bundle, which is now in cache_dir)
+            Self::setup_models(&cache_dir).await?; // Pass cache_dir
+
+            // 4. Mark as prepared
+            fs::File::create(&prepared_marker)?;
+            info!("✅ Pre-warm complete for bundle '{:?}'.", bundle_path);
+        } else {
+            info!("Bundle '{:?}' environment already prepared. Skipping pre-warm.", bundle_path);
         }
-
-        // 3. Setup Models
-        Self::setup_models(&run_dir).await?;
-
-        info!("✅ Pre-warm complete. Bundle is ready for Turbo execution.");
         Ok(())
     }
 
@@ -160,73 +163,53 @@ impl Orchestrator {
         }
 
         // 2. Setup Isolated Execution Environment (Ephemeral)
-        let temp_dir = tempfile::tempdir()?;
-        let run_dir = temp_dir.path();
-        info!("Unpacking bundle to isolated ephemeral environment at {:?} ...", run_dir);
+        let bundle_hash = Self::calculate_bundle_hash(bundle_path)?;
+        let cached_run_dir = Self::get_cache_dir(&bundle_hash)?;
+        let prepared_marker = cached_run_dir.join(".cortex_prepared");
 
-        let bundle_data = crypto::EncryptionEngine::read_bundle(bundle_path)?;
-        let decoder = zstd::stream::read::Decoder::new(std::io::Cursor::new(bundle_data))?;
-        let mut archive = tar::Archive::new(decoder);
-        archive.unpack(run_dir)?;
+        if !prepared_marker.exists() {
+            return Err(anyhow::anyhow!(
+                "Execution environment for bundle '{:?}' is not prepared. Please run `cortex build {:?}` first.",
+                bundle_path,
+                bundle_path
+            ));
+        }
 
-        // 3. Dependency Management (Cached Global Environment)
-        let req_path = run_dir.join("requirements.txt");
+        let run_dir = &cached_run_dir;
+        info!("Executing from cached environment at {:?}", run_dir);
+
+        // 3. Dependency Management (Cached Environment)
         let mut python_cmd = if cfg!(windows) { "python".to_string() } else { "python3".to_string() };
 
+        let cached_venv = cached_run_dir.join(".venv");
+        let req_path = cached_run_dir.join("requirements.txt"); 
+        
         if req_path.exists() {
-            let bundle_hash = Self::calculate_bundle_hash(bundle_path)?;
-            let global_cache_dir = Self::get_cache_dir(&bundle_hash)?;
-            let cached_venv = global_cache_dir.join(".venv");
-
-            if !cached_venv.exists() {
-                info!("Creating cached virtual environment for this bundle...");
-                let uv_available = Self::is_uv_available();
-                if uv_available {
-                    info!("⚡ Using 'uv' for high-speed dependency resolution");
-                    std::process::Command::new("uv")
-                        .args(["venv", ".venv"])
-                        .current_dir(&global_cache_dir)
-                        .status()?;
-                    
-                    std::process::Command::new("uv")
-                        .args(["pip", "install", "-r", req_path.to_str().unwrap()])
-                        .current_dir(&global_cache_dir)
-                        .status()?;
+            if cached_venv.exists() {
+                python_cmd = if cfg!(windows) {
+                    cached_venv.join("Scripts").join("python").to_str().unwrap().to_string()
                 } else {
-                    let base_python = if cfg!(windows) { "python" } else { "python3" };
-                    std::process::Command::new(base_python)
-                        .args(["-m", "venv", ".venv"])
-                        .current_dir(&global_cache_dir)
-                        .status()?;
-
-                    let pip_cmd = if cfg!(windows) {
-                        cached_venv.join("Scripts").join("pip")
-                    } else {
-                        cached_venv.join("bin").join("pip")
-                    };
-
-                    std::process::Command::new(&pip_cmd)
-                        .args(["install", "-r", req_path.to_str().unwrap()])
-                        .current_dir(&global_cache_dir)
-                        .status()?;
-                }
-            }
-
-            // Bind the isolated execution to the cached environment
-            python_cmd = if cfg!(windows) {
-                cached_venv.join("Scripts").join("python").to_str().unwrap().to_string()
+                    cached_venv.join("bin").join("python").to_str().unwrap().to_string()
+                };
+                debug!("Using cached bundle environment: {}", python_cmd);
             } else {
-                cached_venv.join("bin").join("python").to_str().unwrap().to_string()
-            };
-            debug!("Using cached bundle environment: {}", python_cmd);
+                return Err(anyhow::anyhow!(
+                    "Cached virtual environment not found at '{:?}', despite bundle being marked as prepared. Please try running `cortex build {:?}` again.",
+                    cached_venv,
+                    bundle_path
+                ));
+            }
         }
+
 
         // 4. Setup Networking if requested
         let mut macvlan_iface = None;
         if manifest.package.allow_network {
-            match network::NetworkManager::detect_default_interface() {
+            let detection_res = network::NetworkManager::detect_default_interface();
+            match detection_res {
                 Ok(parent) => {
                     let ifname = format!("mc_{}", &session_id[..8]);
+                    // SWALLOW error here - do not return early
                     if let Err(e) = network::NetworkManager::create_macvlan(&ifname, &parent) {
                         warn!("Failed to create macvlan interface {}: {}. Falling back to standard bridge.", ifname, e);
                     } else {
@@ -269,7 +252,7 @@ impl Orchestrator {
         secrets::SecretManager::redact_env(&mut common_env);
 
         // 5. Initialize Models
-        Self::setup_models(run_dir).await?;
+        Self::setup_models(run_dir).await.context("Failed to setup models")?;
 
         // 6. Initialize Executors based on Mode
         if is_turbo {
@@ -309,7 +292,8 @@ impl Orchestrator {
                 });
             }
 
-            let (results, metrics) = parallel_executor.execute(tasks).await?;
+            let (results, metrics) = parallel_executor.execute(tasks).await
+                .context("Parallel executor failed")?;
             for (i, res) in results.iter().enumerate() {
                 info!("=== Agent {} Terminated ===\n{}", i, res);
             }
@@ -341,7 +325,8 @@ impl Orchestrator {
                 secret_fds: secret_fds.clone(),
             };
 
-            let (results, metrics) = parallel_executor.execute(vec![task]).await?;
+            let (results, metrics) = parallel_executor.execute(vec![task]).await
+                .context("Single agent executor failed")?;
             info!("=== Agent Execution Output ===\n{}", results[0]);
             info!("Final Execution Metrics: {:?}", metrics);
         }
@@ -454,80 +439,6 @@ impl Orchestrator {
 
         crypto::EncryptionEngine::encrypt_file(bundle_path, &password)?;
 
-        Ok(())
-    }
-
-    /// Initialize the Cortex runtime (downloads common packages)
-    pub async fn init_env() -> Result<()> {
-        info!("Initializing Cortex 2.0 Base Environment...");
-
-        let home_dir =
-            dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Could not find home directory"))?;
-        let stdlib_dir = home_dir.join(".cortex").join("stdlib");
-
-        info!("Setting up Cortex standard library at {:?}", stdlib_dir);
-        std::fs::create_dir_all(&stdlib_dir)?;
-
-        let venv_path = stdlib_dir.join(".venv");
-        let uv_available = Self::is_uv_available();
-
-        if !venv_path.exists() {
-            info!("Creating central virtual environment...");
-            if uv_available {
-                std::process::Command::new("uv")
-                    .args(["venv", venv_path.to_str().unwrap()])
-                    .status()?;
-            } else {
-                std::process::Command::new("python3")
-                    .args(["-m", "venv", venv_path.to_str().unwrap()])
-                    .status()?;
-            }
-        }
-
-        let pip_cmd = if cfg!(windows) {
-            venv_path.join("Scripts").join("pip")
-        } else {
-            venv_path.join("bin").join("pip")
-        };
-
-        info!("Downloading and pre-warming common AI packages...");
-
-        let common_packages = vec![
-            "crewai",
-            "crewai-tools",
-            "litellm",
-            "pydantic",
-            "requests",
-            "beautifulsoup4",
-            "duckduckgo-search",
-        ];
-
-        let status = if uv_available {
-            info!("⚡ Using 'uv' for high-speed pre-warming");
-            std::process::Command::new("uv")
-                .args(["pip", "install"])
-                .args(&common_packages)
-                .env("VIRTUAL_ENV", &venv_path)
-                .status()?
-        } else {
-            std::process::Command::new(&pip_cmd)
-                .arg("install")
-                .args(&common_packages)
-                .status()?
-        };
-
-        if !status.success() {
-            return Err(anyhow::anyhow!("Failed to pre-warm packages."));
-        }
-
-        // Ensure python base deps
-        let py_executor = executor::PythonExecutor::new(PathBuf::from("."));
-        py_executor.initialize_env()?;
-
-        info!(
-            "Cortex environment is primed and ready. Common packages cached in {:?}",
-            venv_path
-        );
         Ok(())
     }
 }

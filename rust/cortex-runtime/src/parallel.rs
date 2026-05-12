@@ -63,17 +63,6 @@ impl ParallelExecutor {
 
                 debug!(" - Spawning task [{}]: {}", task.id, task.name);
 
-                // Phase 1: Initialize Sandbox per task for resource limits
-                let sandbox = crate::sandbox::Sandbox::new(&task.session_id).unwrap_or(
-                    crate::sandbox::Sandbox {
-                        cgroup_path: std::path::PathBuf::new(),
-                    },
-                );
-
-                // Example limits: 50% CPU, 2048 MB RAM (in production, passed from manifest)
-                let _ = sandbox.set_cpu_limit(50);
-                let _ = sandbox.set_memory_limit(2048);
-
                 // For Windows compatibility vs Unix shell, it's safer to execute via sh or cmd
                 // but since Mojo code used `shell=True`, we will emulate that.
                 let is_windows = cfg!(windows);
@@ -91,8 +80,9 @@ impl ParallelExecutor {
 
                 #[cfg(target_os = "linux")]
                 let mut sync_pipe: Option<(RawFd, RawFd)> = None;
+                
                 #[cfg(target_os = "linux")]
-                if task.macvlan_iface.is_some() {
+                if unsafe { libc::geteuid() == 0 } && task.macvlan_iface.is_some() {
                     if let Ok((rx, tx)) = nix::unistd::pipe() {
                         use std::os::unix::io::IntoRawFd;
                         sync_pipe = Some((rx.into_raw_fd(), tx.into_raw_fd()));
@@ -101,56 +91,52 @@ impl ParallelExecutor {
 
                 #[cfg(target_os = "linux")]
                 {
-                    // Establish ZeroCopyBus for 0.05ms hardware latency shared memory message passing
                     if let Ok(bus) = crate::shm::ZeroCopyBus::new(1024 * 1024) {
                         let fd = bus.get_fd();
                         cmd.env("CORTEX_SHM_FD", fd.to_string());
                     }
 
-                    let sandbox_for_child = sandbox.clone();
                     let allow_net = task.allow_network;
                     let macvlan_iface = task.macvlan_iface.clone();
+                    let session_id_for_child = task.session_id.clone();
                     
                     unsafe {
                         let inner_sync = sync_pipe;
                         cmd.pre_exec(move || {
-                            // Phase 1 (v2.2.1): Assign child to OS cgroups slice
-                            let _ = sandbox_for_child.apply_to_pid(std::process::id());
+                            if libc::geteuid() == 0 {
+                                let sandbox = crate::sandbox::Sandbox::new(&session_id_for_child).unwrap();
+                                let _ = sandbox.set_cpu_limit(50);
+                                let _ = sandbox.set_memory_limit(2048);
+                                let _ = sandbox.apply_to_pid(std::process::id());
 
-                            // Phase 3/4 Security Boundaries:
-                            let mut flags = libc::CLONE_NEWPID;
-                            const CLONE_NEWCGROUP: libc::c_int = 0x02000000;
-                            flags |= CLONE_NEWCGROUP;
+                                let mut flags = libc::CLONE_NEWPID;
+                                const CLONE_NEWCGROUP: libc::c_int = 0x02000000;
+                                flags |= CLONE_NEWCGROUP;
 
-                            if !allow_net || macvlan_iface.is_some() {
-                                flags |= libc::CLONE_NEWNET;
-                            }
+                                if !allow_net || macvlan_iface.is_some() {
+                                    flags |= libc::CLONE_NEWNET;
+                                }
 
-                            // Spawn agent inside isolated PID / CGROUP / NET boundaries
-                            if std::env::var("CORTEX_NO_ISOLATION").is_err() {
                                 if libc::unshare(flags) != 0 {
-                                    return Err(std::io::Error::last_os_error());
+                                    let err = std::io::Error::last_os_error();
+                                    eprintln!("Warning: Could not create isolated namespaces ({}). Falling back to basic process isolation.", err);
+                                }
+
+                                if let Some(ref iface) = macvlan_iface {
+                                    if let Some((rx, tx)) = inner_sync {
+                                        let borrow_tx = BorrowedFd::borrow_raw(tx);
+                                        let _ = nix::unistd::write(borrow_tx, b"R");
+                                        let mut buf = [0u8; 1];
+                                        let _ = nix::unistd::read(rx, &mut buf);
+                                        let _ = crate::network::NetworkManager::set_up(iface);
+                                    }
                                 }
                             }
-
-                            // Phase 5 (v2.5.2): Setup macvlan if provided
-                            if let Some(ref iface) = macvlan_iface {
-                                if let Some((rx, tx)) = inner_sync {
-                                    // 1. Signal READY to parent
-                                    let borrow_tx = BorrowedFd::borrow_raw(tx);
-                                    let _ = nix::unistd::write(borrow_tx, b"R");
-                                    // 2. Wait for GO from parent (reading 1 byte)
-                                    let mut buf = [0u8; 1];
-                                    let _ = nix::unistd::read(rx, &mut buf);
-                                    // 3. Bring interface up
-                                    let _ = crate::network::NetworkManager::set_up(iface);
-                                }
-                            }
-
                             Ok(())
                         });
                     }
                 }
+
 
                 for (key, fd) in &task.secret_fds {
                     let fd_path = format!("/proc/self/fd/{}", fd);
@@ -170,22 +156,24 @@ impl ParallelExecutor {
 
                 // Parent-side sync
                 #[cfg(target_os = "linux")]
-                if let (Some(iface), Some((rx, tx))) = (&task.macvlan_iface, sync_pipe) {
-                    // 1. Wait for READY from child
-                    let mut buf = [0u8; 1];
-                    let _ = nix::unistd::read(rx, &mut buf);
-                    // 2. Move interface into child namespace
-                    if let Some(pid) = child.id() {
-                        let _ = crate::network::NetworkManager::move_to_ns(iface, pid);
-                        
-                        // 3. Apply Firewall rules (Manifest-Driven)
-                        if !task.allowed_ips.is_empty() {
-                             let _ = crate::network::NetworkManager::apply_firewall_rules(&task.session_id, task.allowed_ips.clone());
+                if unsafe { libc::geteuid() == 0 } {
+                    if let (Some(iface), Some((rx, tx))) = (&task.macvlan_iface, sync_pipe) {
+                        // 1. Wait for READY from child
+                        let mut buf = [0u8; 1];
+                        let _ = nix::unistd::read(rx, &mut buf);
+                        // 2. Move interface into child namespace
+                        if let Some(pid) = child.id() {
+                            let _ = crate::network::NetworkManager::move_to_ns(iface, pid);
+                            
+                            // 3. Apply Firewall rules (Manifest-Driven)
+                            if !task.allowed_ips.is_empty() {
+                                 let _ = crate::network::NetworkManager::apply_firewall_rules(&task.session_id, task.allowed_ips.clone());
+                            }
                         }
+                        // 3. Signal GO to child
+                        let borrow_tx = unsafe { BorrowedFd::borrow_raw(tx) };
+                        let _ = nix::unistd::write(borrow_tx, b"G");
                     }
-                    // 3. Signal GO to child
-                    let borrow_tx = unsafe { BorrowedFd::borrow_raw(tx) };
-                    let _ = nix::unistd::write(borrow_tx, b"G");
                 }
 
                 let mut stdout = child.stdout.take().unwrap();

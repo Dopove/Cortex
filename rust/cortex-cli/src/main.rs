@@ -77,15 +77,6 @@ enum Commands {
         target_dir: PathBuf,
     },
 
-    /// Encrypt a .cortex bundle using AES-GCM
-    Encrypt {
-        /// The .cortex bundle to encrypt
-        bundle: PathBuf,
-    },
-
-    /// Initialize the Cortex runtime (downloads common packages)
-    Init,
-
     /// List active agent sessions
     Ps,
 
@@ -94,10 +85,10 @@ enum Commands {
         /// The ID of the session to terminate
         session_id: String,
     },
-}
+    }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+    #[tokio::main]
+    async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Configure logging
@@ -128,7 +119,7 @@ async fn main() -> Result<()> {
             let bundler = cortex_bundler::Bundler::new(project_dir, output.clone());
             bundler.run_bundle_pipeline().await?;
 
-            info!("Pre-warming execution environment for faster first run...");
+            info!("Preparing execution environment...");
             cortex_runtime::Orchestrator::prewarm_bundle(&output).await?;
         }
         Commands::Run { bundle, gpu } => {
@@ -136,14 +127,20 @@ async fn main() -> Result<()> {
             if let Some(gpu_id) = gpu {
                 info!("Binding to GPU ID: {}", gpu_id);
             }
-            cortex_runtime::Orchestrator::execute(&bundle, gpu, false).await?;
+            if let Err(e) = cortex_runtime::Orchestrator::execute(&bundle, gpu, false).await {
+                eprintln!("Error during execution: {:?}", e);
+                std::process::exit(1);
+            }
         }
         Commands::Turbo { bundle, gpu } => {
             info!("⚡ Activating Turbo Mode for bundle {:?}", bundle);
             if let Some(gpu_id) = gpu {
                 info!("Binding to GPU ID: {}", gpu_id);
             }
-            cortex_runtime::Orchestrator::execute(&bundle, gpu, true).await?;
+            if let Err(e) = cortex_runtime::Orchestrator::execute(&bundle, gpu, true).await {
+                eprintln!("Error during Turbo execution: {:?}", e);
+                std::process::exit(1);
+            }
         }
         Commands::Info { bundle } => {
             info!("Displaying bundle info for {:?}", bundle);
@@ -190,16 +187,6 @@ async fn main() -> Result<()> {
             info!("Extracting Cortex bundle {:?} to {:?}", bundle, target_dir);
             cortex_runtime::Orchestrator::extract(&bundle, &target_dir)?;
             println!("✅ Bundle extracted to {:?}", target_dir);
-        }
-        Commands::Encrypt { bundle } => {
-            info!("Encrypting Cortex bundle {:?}", bundle);
-            println!("🔒 Bundle encryption initialized.");
-            cortex_runtime::Orchestrator::encrypt(&bundle)?;
-            println!("✅ Bundle successfully encrypted.");
-        }
-        Commands::Init => {
-            info!("Initializing Cortex Runtime and Pre-warming common dependencies");
-            cortex_runtime::Orchestrator::init_env().await?;
         }
         Commands::Ps => {
             let session_mgr = cortex_runtime::session::SessionManager::new()?;
