@@ -63,8 +63,6 @@ impl ParallelExecutor {
 
                 debug!(" - Spawning task [{}]: {}", task.id, task.name);
 
-                // For Windows compatibility vs Unix shell, it's safer to execute via sh or cmd
-                // but since Mojo code used `shell=True`, we will emulate that.
                 let is_windows = cfg!(windows);
                 let mut cmd = if is_windows {
                     let mut c = Command::new("cmd");
@@ -80,7 +78,7 @@ impl ParallelExecutor {
 
                 #[cfg(target_os = "linux")]
                 let mut sync_pipe: Option<(RawFd, RawFd)> = None;
-                
+
                 #[cfg(target_os = "linux")]
                 if unsafe { libc::geteuid() == 0 } && task.macvlan_iface.is_some() {
                     if let Ok((rx, tx)) = nix::unistd::pipe() {
@@ -88,7 +86,7 @@ impl ParallelExecutor {
                         sync_pipe = Some((rx.into_raw_fd(), tx.into_raw_fd()));
                     }
                 }
-
+                
                 #[cfg(target_os = "linux")]
                 {
                     if let Ok(bus) = crate::shm::ZeroCopyBus::new(1024 * 1024) {
@@ -137,7 +135,6 @@ impl ParallelExecutor {
                     }
                 }
 
-
                 for (key, fd) in &task.secret_fds {
                     let fd_path = format!("/proc/self/fd/{}", fd);
                     cmd.env(key, fd_path);
@@ -154,23 +151,17 @@ impl ParallelExecutor {
                     }
                 };
 
-                // Parent-side sync
                 #[cfg(target_os = "linux")]
                 if unsafe { libc::geteuid() == 0 } {
                     if let (Some(iface), Some((rx, tx))) = (&task.macvlan_iface, sync_pipe) {
-                        // 1. Wait for READY from child
                         let mut buf = [0u8; 1];
                         let _ = nix::unistd::read(rx, &mut buf);
-                        // 2. Move interface into child namespace
                         if let Some(pid) = child.id() {
                             let _ = crate::network::NetworkManager::move_to_ns(iface, pid);
-                            
-                            // 3. Apply Firewall rules (Manifest-Driven)
                             if !task.allowed_ips.is_empty() {
                                  let _ = crate::network::NetworkManager::apply_firewall_rules(&task.session_id, task.allowed_ips.clone());
                             }
                         }
-                        // 3. Signal GO to child
                         let borrow_tx = unsafe { BorrowedFd::borrow_raw(tx) };
                         let _ = nix::unistd::write(borrow_tx, b"G");
                     }
