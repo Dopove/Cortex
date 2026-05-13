@@ -17,8 +17,8 @@ if ($env:CORTEX_VERSION) {
         $release = Invoke-RestMethod -Uri "https://api.github.com/repos/Dopove/Cortex/releases/latest"
         $LATEST_TAG = $release.tag_name
     } catch {
-        Write-Host "Warning: Could not detect latest version via API, falling back to v2.5.9" -ForegroundColor Yellow
-        $LATEST_TAG = "v2.5.9"
+        Write-Host "Warning: Could not detect latest version via API, falling back to v2.5.10" -ForegroundColor Yellow
+        $LATEST_TAG = "v2.5.10"
     }
 }
 Write-Host "Target Version: $LATEST_TAG" -ForegroundColor Green
@@ -46,7 +46,7 @@ $ZIP_FILE = Join-Path $TMP_DIR "cortex.zip"
 try {
     Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile $ZIP_FILE
     Expand-Archive -Path $ZIP_FILE -DestinationPath $TMP_DIR -Force
-    # Find the binary (it might be named cortex.exe or cortex_v2.5.9_x64_windows.exe)
+    # Find the binary (it might be named cortex.exe or cortex_v2.5.10_x64_windows.exe)
     $BINARY_PATH = Get-ChildItem -Path $TMP_DIR -Filter "cortex*.exe" | Select-Object -First 1 | ForEach-Object { $_.FullName }
 } catch {
     Write-Host "Error: Failed to download or extract binary. Please check your internet connection or the release status." -ForegroundColor Red

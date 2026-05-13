@@ -1,6 +1,6 @@
-# Cortex 2.5.9: Hardened Multi-Agent System Bundler & Runtime
+# Cortex 2.5.10: Hardened Multi-Agent System Bundler & Runtime
 
-Cortex 2.5.9 is a production-grade, Rust-powered execution engine for complex Multi-Agent Systems. It delivers a high-concurrency orchestrator, zero-copy memory mapping, industrial-grade security, and **Universal Cross-Platform compatibility (Linux, macOS, Windows) backed by full CI/CD E2E testing**.
+Cortex 2.5.10 is a production-grade, Rust-powered execution engine for complex Multi-Agent Systems. It delivers a high-concurrency orchestrator, zero-copy memory mapping, industrial-grade security, and **Universal Cross-Platform compatibility (Linux, macOS, Windows) backed by full CI/CD E2E testing**.
 
 ## 📚 Documentation Index
 
@@ -30,20 +30,20 @@ Download the pre-compiled binary or archive for your system from **[GitHub Relea
 
 #### 🐧 Linux (Ubuntu / Fedora / Arch)
 
-1. Download the raw binary `cortex_v2.5.9_x64_ubuntu` or archive `cortex_v2.5.9_x64_ubuntu.tar.gz`.
-2. Make it executable: `chmod +x cortex_v2.5.9_x64_ubuntu`.
-3. Install: `sudo mv cortex_v2.5.9_x64_ubuntu /usr/local/bin/cortex`.
+1. Download the raw binary `cortex_v2.5.10_x64_ubuntu` or archive `cortex_v2.5.10_x64_ubuntu.tar.gz`.
+2. Make it executable: `chmod +x cortex_v2.5.10_x64_ubuntu`.
+3. Install: `sudo mv cortex_v2.5.10_x64_ubuntu /usr/local/bin/cortex`.
 
 #### 🍎 macOS (Apple Silicon & Intel)
 
-1. Download `cortex_v2.5.9_arm64_macos` (Apple Silicon) or `cortex_v2.5.9_x64_macos` (Intel).
-2. Make it executable: `chmod +x cortex_v2.5.9_*_macos`.
-3. Move to path: `mv cortex_v2.5.9_*_macos /usr/local/bin/cortex`.
+1. Download `cortex_v2.5.10_arm64_macos` (Apple Silicon) or `cortex_v2.5.10_x64_macos` (Intel).
+2. Make it executable: `chmod +x cortex_v2.5.10_*_macos`.
+3. Move to path: `mv cortex_v2.5.10_*_macos /usr/local/bin/cortex`.
 4. Allow the binary in **System Settings > Privacy & Security** if prompted by Gatekeeper.
 
 #### 🪟 Windows
 
-1. Download the raw binary `cortex_v2.5.9_x64_windows.exe` or archive `cortex_v2.5.9_x64_windows.zip`.
+1. Download the raw binary `cortex_v2.5.10_x64_windows.exe` or archive `cortex_v2.5.10_x64_windows.zip`.
 2. Move it to a folder (e.g., `C:\Program Files\Cortex\`).
 3. Add that folder to your **System PATH** environment variable.
 
@@ -89,7 +89,7 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 ## 🛠️ Folder Structure
 
 - `/`: Production CLI binary and root assets.
-- `/rust`: Source code for the 2.5.9 Runtime, Bundler, Core, and comprehensive Multi-OS test suites.
+- `/rust`: Source code for the 2.5.10 Runtime, Bundler, Core, and comprehensive Multi-OS test suites.
 
 ## 📊 Production Certification Metrics
 
@@ -103,4 +103,4 @@ Prevents system freezes by auditing available RAM+Swap before loading large mode
 
 ---
 
-**Status**: `CORTEX 2.5.9 CERTIFIED PRODUCTION READY`
+**Status**: `CORTEX 2.5.10 CERTIFIED PRODUCTION READY`

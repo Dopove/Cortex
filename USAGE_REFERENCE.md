@@ -1,4 +1,4 @@
-# Cortex 2.5.9: CLI Usage Reference
+# Cortex 2.5.10: CLI Usage Reference
 
 Comprehensive documentation for all `cortex` subcommands.
 

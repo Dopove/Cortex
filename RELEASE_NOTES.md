@@ -1,3 +1,17 @@
+# Release Notes: Cortex v2.5.10
+
+Cortex v2.5.10 introduces a streamlined core workflow and robust cross-platform stability. This release removes the deprecated `init` command, making the `build` step the single source of truth for environment preparation, and ensures graceful degradation on non-root systems.
+
+## 🚀 Key Features
+
+- **Streamlined Build/Run Workflow**: The `cortex init` command has been completely removed. `cortex build` now handles all environment caching and dependency installation, making `cortex run` an instant, low-overhead execution command.
+- **Graceful Isolation Fallback**: Cortex now automatically detects if it's running with root privileges. If not, it gracefully disables cgroup and network namespacing features, preventing permission-denied errors and hangs on non-root systems while still providing basic process isolation.
+- **CI/CD Stability**: All cross-platform end-to-end tests are now passing, ensuring a reliable and consistent developer experience across Linux, macOS, and Windows.
+
+---
+
+**Status**: `CORTEX v2.5.10 PRODUCTION READY`
+
 # Release Notes: Cortex v2.5.9
 
 Cortex v2.5.9 introduces **Direct-to-OS Binary Distribution** and **Multi-Platform Stability Fixes**. This release focuses on simplifying the global installation process and ensuring ultra-reliable performance across all supported operating systems.

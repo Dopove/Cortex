@@ -33,8 +33,8 @@ else
     LATEST_TAG=$(curl -s https://api.github.com/repos/Dopove/Cortex/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
     if [ -z "$LATEST_TAG" ]; then
-        echo -e "${YELLOW}Warning: Could not detect latest version via API, falling back to v2.5.9${NC}"
-        LATEST_TAG="v2.5.9"
+        echo -e "${YELLOW}Warning: Could not detect latest version via API, falling back to v2.5.10${NC}"
+        LATEST_TAG="v2.5.10"
     fi
 fi
 
