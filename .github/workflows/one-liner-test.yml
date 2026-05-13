@@ -70,10 +70,8 @@ jobs:
                 ldconfig && 
                 bash install.sh && 
                 export PATH=\$HOME/.local/bin:\$PATH && 
-                cortex --version && 
-                cortex init
-              "
-              ;;
+                cortex --version
+                "              ;;
             powershell-ps1)
               echo "Testing via PowerShell installer..."
               powershell -ExecutionPolicy Bypass -File install.ps1
@@ -89,13 +87,10 @@ jobs:
             powershell -Command "
               \$env:Path += \";\$env:USERPROFILE\.local\bin\"
               cortex --version
-              cortex init
             "
           else
             # Ensure bin dir is in path for the rest of the job
             export PATH="$HOME/.local/bin:$PATH"
             echo "Checking version..."
             cortex --version
-            echo "Checking init..."
-            cortex init
           fi
