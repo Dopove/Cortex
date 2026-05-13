@@ -32,12 +32,6 @@ if [ ! -f "$BIN_PATH" ]; then
 fi
 
 echo "==================================="
-echo "1. Testing Environment Initialization"
-echo "==================================="
-$BIN_PATH init
-echo "✅ Environment Initialized."
-
-echo "==================================="
 echo "2. Building Agent Bundle"
 echo "==================================="
 if [ -f "examples/e2e-agent.cortex" ]; then

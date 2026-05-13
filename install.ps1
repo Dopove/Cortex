@@ -77,10 +77,8 @@ if ($currentPath -notlike "*$INSTALL_DIR*") {
     Write-Host "Added $INSTALL_DIR to User PATH." -ForegroundColor Yellow
 }
 
-# 6. Initialization
+# 6. Finalization
 Write-Host "Cortex installed successfully!" -ForegroundColor Green
-Write-Host "Running 'cortex init'..." -ForegroundColor Blue
-& $DEST_BINARY init
 
 Write-Host "`n========================================" -ForegroundColor Green
 Write-Host "Cortex $LATEST_TAG is now available globally." -ForegroundColor Green

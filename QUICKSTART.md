@@ -12,15 +12,7 @@ curl -sSL https://raw.githubusercontent.com/Dopove/Cortex/main/install.sh | bash
 
 Alternatively, you can move the `cortex` binary manually to your PATH.
 
-## 2. Initialize the Environment
-
-Cortex needs to verify your Python environment and hardware capabilities before its first run.
-
-```bash
-./cortex init
-```
-
-## 3. Create Your First Bundle
+## 2. Create Your First Bundle
 
 Cortex bundles contain your agent logic, dependencies, and model manifests.
 
@@ -29,7 +21,7 @@ Cortex bundles contain your agent logic, dependencies, and model manifests.
 ./cortex build path/to/your/agent-dir my-agent.cortex
 ```
 
-## 4. Run Your Agent
+## 3. Run Your Agent
 
 Execute your bundle. Cortex will automatically:
 
@@ -41,7 +33,7 @@ Execute your bundle. Cortex will automatically:
 ./cortex run my-first-agent.cortex
 ```
 
-## 5. Security: Encrypting Your Work (Optional)
+## 4. Security: Encrypting Your Work (Optional)
 
 To share bundles securely, add AES-256-GCM encryption.
 

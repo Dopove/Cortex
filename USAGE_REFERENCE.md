@@ -6,7 +6,6 @@ Comprehensive documentation for all `cortex` subcommands.
 
 - [`build`](#build) - Pack a project directory into a `.cortex` bundle.
 - [`run`](#run) - Execute agents within a bundle.
-- [`init`](#init) - Initialize the execution environment.
 - [`info`](#info) - Inspect bundle contents.
 - [`encrypt`](#encrypt) - Secure a bundle with AES-256-GCM.
 - [`verify`](#verify) - Validate bundle integrity (Zstd + SHA256).
@@ -33,12 +32,6 @@ Inflates the bundle into a high-concurrency runtime.
 - **--turbo**: Activates parallel execution for multi-agent bundles.
 - **--gpu <ID>**: Enables CUDA acceleration for the specified GPU.
 - **--json**: Outputs real-time execution logs in JSON format for production indexing.
-
-### `init`
-
-`cortex init`
-
-Pre-flight check for the local machine. It detects AVX/CUDA capabilities and confirms Python 3.10+ availability.
 
 ### `encrypt`
 

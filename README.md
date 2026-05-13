@@ -49,23 +49,15 @@ Download the pre-compiled binary or archive for your system from **[GitHub Relea
 
 ---
 
-Finally, run `cortex init` to prepare your environment.
-
 ## 🚀 Quick Start
 
-### 1. Initialize Environment
-
-```bash
-./cortex init
-```
-
-### 2. Build a Bundle
+### 1. Build a Bundle
 
 ```bash
 ./cortex build path/to/your/agent-dir my-agent.cortex
 ```
 
-### 3. Run safely
+### 2. Run safely
 
 ```bash
 ./cortex run my-agent.cortex
